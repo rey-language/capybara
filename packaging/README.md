@@ -7,10 +7,14 @@ capy-v<version>-<target>/
 ├── bin/capy
 └── libexec/toolchain/
     ├── bin/rey
-    ├── bin/rey.bin
     ├── bin/runtime/librey_rt.a
     └── std/src/
 ~~~
+
+Only `bin/rey` is required. Older Rey 0.3.0 archives may also contain
+`bin/rey.bin` (the native engine behind a wrapper) and `bin/rey-v0` (the Rust
+reference implementation); Capy carries them through when present but never
+invokes `rey-v0`.
 
 Supported targets are darwin-arm64, darwin-x86_64, linux-x86_64, and
 linux-aarch64. The Rey 0.3.0 archives call the Darwin targets macos-arm64 and

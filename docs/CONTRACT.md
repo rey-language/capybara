@@ -559,7 +559,6 @@ capy-v<version>-<target>/
 └── libexec/
     └── toolchain/
         ├── bin/rey
-        ├── bin/rey.bin
         ├── bin/runtime/librey_rt.a
         └── std/src/...
 ```

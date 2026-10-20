@@ -357,7 +357,6 @@ done
 [[ -n "$SOURCE_DIR" ]] || fail "archive does not contain a Capy release for $TARGET"
 [[ -f "$SOURCE_DIR/bin/capy" ]] || fail "archive is missing bin/capy"
 [[ -f "$SOURCE_DIR/libexec/toolchain/bin/rey" ]] || fail "archive is missing libexec/toolchain/bin/rey"
-[[ -f "$SOURCE_DIR/libexec/toolchain/bin/rey.bin" ]] || fail "archive is missing libexec/toolchain/bin/rey.bin"
 [[ -f "$SOURCE_DIR/libexec/toolchain/bin/runtime/librey_rt.a" ]] || fail "archive is missing the Rey runtime library"
 [[ -d "$SOURCE_DIR/libexec/toolchain/std/src" ]] || fail "archive is missing the Rey standard library"
 
@@ -421,7 +420,10 @@ TOOLCHAIN_STAGE="$CAPY_HOME/toolchains/.$REY_VERSION.new.$$"
 TOOLCHAIN_BACKUP="$CAPY_HOME/toolchains/.$REY_VERSION.old.$$"
 rm -rf "$TOOLCHAIN_STAGE" "$TOOLCHAIN_BACKUP"
 cp -R "$SOURCE_DIR/libexec/toolchain" "$TOOLCHAIN_STAGE"
-chmod 755 "$TOOLCHAIN_STAGE/bin/rey" "$TOOLCHAIN_STAGE/bin/rey.bin"
+chmod 755 "$TOOLCHAIN_STAGE/bin/rey"
+if [[ -f "$TOOLCHAIN_STAGE/bin/rey.bin" ]]; then
+    chmod 755 "$TOOLCHAIN_STAGE/bin/rey.bin"
+fi
 if [[ -f "$TOOLCHAIN_STAGE/bin/rey-v0" ]]; then
     chmod 755 "$TOOLCHAIN_STAGE/bin/rey-v0"
 fi

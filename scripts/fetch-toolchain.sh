@@ -62,13 +62,18 @@ for candidate in "$EXTRACT_DIR"/rey-v"$REY_VERSION"-"$REY_TARGET"; do
 done
 [[ -n "$SOURCE_DIR" ]] || fail "Archive does not contain rey-v$REY_VERSION-$REY_TARGET"
 [[ -f "$SOURCE_DIR/bin/rey" ]] || fail "Rey archive is missing bin/rey"
-[[ -f "$SOURCE_DIR/bin/rey.bin" ]] || fail "Rey archive is missing bin/rey.bin"
 [[ -f "$SOURCE_DIR/bin/runtime/librey_rt.a" ]] || fail "Rey archive is missing bin/runtime/librey_rt.a"
 [[ -d "$SOURCE_DIR/std/src" ]] || fail "Rey archive is missing std/src"
 
 rm -rf "$STAGE_DIR" "$BACKUP_DIR"
 cp -R "$SOURCE_DIR" "$STAGE_DIR"
-chmod +x "$STAGE_DIR/bin/rey" "$STAGE_DIR/bin/rey.bin"
+chmod +x "$STAGE_DIR/bin/rey"
+if [[ -f "$STAGE_DIR/bin/rey.bin" ]]; then
+    chmod +x "$STAGE_DIR/bin/rey.bin"
+fi
+if [[ -f "$STAGE_DIR/bin/rey-v0" ]]; then
+    chmod +x "$STAGE_DIR/bin/rey-v0"
+fi
 if [[ -d "$REPO_ROOT/compat/std" ]]; then
     rm -rf "$STAGE_DIR/std/src"
     cp -R "$REPO_ROOT/compat/std" "$STAGE_DIR/std/src"

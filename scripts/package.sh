@@ -24,12 +24,8 @@ case "$CAPY_TARGET" in
 esac
 
 TOOLCHAIN_DIR="$REPO_ROOT/vendor/toolchain"
-[[ -f "$TOOLCHAIN_DIR/bin/rey" ]] || {
-    printf 'error: toolchain is missing bin/rey\n' >&2
-    exit 1
-}
-[[ -f "$TOOLCHAIN_DIR/bin/rey.bin" ]] || {
-    printf 'error: toolchain is missing bin/rey.bin\n' >&2
+[[ -x "$TOOLCHAIN_DIR/bin/rey" ]] || {
+    printf 'error: toolchain is missing an executable bin/rey\n' >&2
     exit 1
 }
 [[ -f "$TOOLCHAIN_DIR/bin/runtime/librey_rt.a" ]] || {

@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TOOLCHAIN_DIR="$REPO_ROOT/vendor/toolchain"
 
-if [[ ! -x "$TOOLCHAIN_DIR/bin/rey" || ! -f "$TOOLCHAIN_DIR/bin/rey.bin" || ! -f "$TOOLCHAIN_DIR/bin/runtime/librey_rt.a" || ! -d "$TOOLCHAIN_DIR/std/src" ]]; then
+if [[ ! -x "$TOOLCHAIN_DIR/bin/rey" || ! -f "$TOOLCHAIN_DIR/bin/runtime/librey_rt.a" || ! -d "$TOOLCHAIN_DIR/std/src" ]]; then
     bash "$SCRIPT_DIR/fetch-toolchain.sh"
 fi
 
