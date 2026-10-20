@@ -1,0 +1,27 @@
+scripts/build.sh
+  s_65d89978e650e2::t_5a0195161f647f 12-17
+docs/RELEASE.md
+  s_65d89978e650e2::t_4a150b66817c99 11-15,26-28
+docs/ARCHITECTURE.md
+  s_65d89978e650e2::t_4a150b66817c99 63-69,71-76
+CHANGELOG.md
+  s_65d89978e650e2::t_4a150b66817c99 12-13
+scripts/build-runtime.sh
+  s_65d89978e650e2::t_85f97f29e1f9c7 1-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "87f9d29e13498ed6d1021433cadde2cfa352b32f",
+  "prompts": {},
+  "sessions": {
+    "s_65d89978e650e2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15a13-a54b-7162-b531-c8ab5e5e4ce2",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Misbah Khursheed <m.misbahkhursheed@gmail.com>"
+    }
+  }
+}
