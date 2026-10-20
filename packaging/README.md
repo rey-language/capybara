@@ -17,7 +17,7 @@ reference implementation); Capy carries them through when present but never
 invokes `rey-v0`.
 
 Supported targets are darwin-arm64, darwin-x86_64, linux-x86_64, and
-linux-aarch64. The Rey 0.3.0 archives call the Darwin targets macos-arm64 and
+linux-aarch64. The Rey 0.3.1 archives call the Darwin targets macos-arm64 and
 macos-x86_64; scripts/fetch-toolchain.sh maps those release names.
 
 Build and package from the repository root:
@@ -36,8 +36,8 @@ build/dist.
 After all four archives exist, run:
 
 ~~~sh
-bash scripts/release-manifest.sh 0.1.0 build/dist
-bash scripts/render-brew.sh 0.1.0 build/dist build/capy.rb
+bash scripts/release-manifest.sh 0.1.1 build/dist
+bash scripts/render-brew.sh 0.1.1 build/dist build/capy.rb
 ~~~
 
 release-manifest.sh writes latest.toml (the endpoint used by capy update),
@@ -51,5 +51,5 @@ The release workflow builds the four target archives, attaches the archives,
 checksums, latest.toml, the rendered Homebrew formula, and install.sh to the
 GitHub release, and publishes the npm packages when NPM_TOKEN is configured.
 Copying the formula into the tap remains a manual step until tap automation is
-connected. Set NPM_TOKEN and HOMEBREW_TAP_TOKEN as repository secrets to enable
-those publication paths.
+connected. Set NPM_TOKEN as a repository secret to enable npm publication.
+HOMEBREW_TAP_TOKEN alone does not publish the formula into the tap.

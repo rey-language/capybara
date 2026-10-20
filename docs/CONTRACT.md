@@ -85,7 +85,7 @@ pub struct ExecResult {
 
 pub struct Toolchain {
     pub found: bool,
-    pub root: string,      // e.g. ~/.capy/toolchains/0.3.0
+    pub root: string,      // e.g. ~/.capy/toolchains/0.3.1
     pub rey: string,       // <root>/bin/rey
     pub runtime: string,   // <root>/bin/runtime
     pub std: string,       // <root>/std/src
@@ -135,8 +135,8 @@ pub func emptyContext(): Context
 ## Version — `src/capy/version.rey`
 
 ```rey
-pub func capyVersion(): string        // "0.1.0"
-pub func reyVersion(): string         // "0.3.0"
+pub func capyVersion(): string        // "0.1.1"
+pub func reyVersion(): string         // "0.3.1"
 pub func registryUrl(): string        // https://github.com/rey-language/packages.git
 pub func registryRepo(): string       // rey-language/packages
 pub func updateManifestUrl(): string  // github.com/.../releases/latest/download/latest.toml
@@ -483,8 +483,8 @@ pub func maybeNotify(ctx: Context): void
 Update manifest (`release/latest.toml` in the capybara repo):
 
 ```toml
-version = "0.1.0"
-darwin-arm64 = "https://.../capy-v0.1.0-darwin-arm64.tar.gz"
+version = "0.1.1"
+darwin-arm64 = "https://.../capy-v0.1.1-darwin-arm64.tar.gz"
 darwin-arm64-sha256 = "..."
 darwin-x86_64 = "..."
 darwin-x86_64-sha256 = "..."
@@ -617,7 +617,7 @@ Installer (`install.sh`):
 
 ## Bundled compatibility std
 
-Rey `0.3.0`'s native compiler does not implement the interpreter's `native*`
+Rey `0.3.1`'s native compiler does not implement the interpreter's `native*`
 builtin surface or the full pure-Rey std. `compat/std/` is a source overlay
 that keeps the public modules Capy needs while using only the native compiler's
 builtins (`readFile`, `writeFile`, `appendFile`, `fileExists`, `deleteFile`,

@@ -27,7 +27,7 @@ jobs:
             target: linux-aarch64
     runs-on: ${{ matrix.runner }}
     env:
-      CAPY_VERSION: 0.1.0
+      CAPY_VERSION: 0.1.1
       CAPY_TARGET: ${{ matrix.target }}
     steps:
       - name: Check out source
@@ -49,7 +49,7 @@ jobs:
         run: |
           install_home="$(mktemp -d)"
           HOME="$install_home" \
-            CAPY_ARCHIVE="$PWD/build/dist/capy-v0.1.0-$CAPY_TARGET.tar.gz" \
+            CAPY_ARCHIVE="$PWD/build/dist/capy-v0.1.1-$CAPY_TARGET.tar.gz" \
             CAPY_SKIP_DEPS=1 \
             CAPY_SKIP_PROFILE=1 \
             bash install.sh

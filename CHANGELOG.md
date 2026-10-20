@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.1 - 2026-10-20
+
+Patch release of Capybara, the `capy` CLI for the Rey programming language.
+
+### Changed
+
+- Bundle Rey 0.3.1 and publish the Capy CLI as version 0.1.1.
+- Avoid a second Rey process startup during ordinary toolchain discovery while
+  keeping `capy doctor`'s live compiler-version check.
+
 ## 0.1.0 - 2026-10-20
 
 First beta of Capybara, the `capy` CLI for the Rey programming language.

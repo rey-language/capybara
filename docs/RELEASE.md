@@ -1,14 +1,17 @@
 # Release and packaging
 
-This document records the Capybara beta packaging contract. It describes the
-release pipeline and formats; it does not claim that a release has been
-published.
+This document records the Capybara beta packaging contract and release
+pipeline.
+
+Capy `0.1.1` pins Rey `0.3.1`. Release readiness requires fetching the matching
+Rey assets, building and packaging Capy on each target, and validating the
+packaged installer. Metadata checks alone do not establish readiness.
 
 ## Fetch, build, and package
 
 The release process is organized around three stages:
 
-1. Fetch the pinned Rey `0.3.0` compiler, runtime, and standard library. The
+1. Fetch the pinned Rey `0.3.1` compiler, runtime, and standard library. The
    upstream runtime archive is LLVM 21 bitcode, so `scripts/build-runtime.sh`
    rebuilds it from `compat/runtime` as native objects with the platform's
    clang and archiver. This keeps Linux builds compatible with Ubuntu 22.04's
@@ -26,6 +29,18 @@ local archive. `packaging/install.sh` is a compatibility wrapper around it.
 The runtime sources in `compat/runtime` track the Rey 0.3 runtime ABI; update
 them when that ABI changes. Set `CAPY_NATIVE_RUNTIME=0` only to keep the runtime
 archive from the downloaded toolchain unchanged.
+
+Build and packaging scripts reject a cached compiler whose live version does
+not match `src/capy/version.rey`. Packaging also checks the built Capy version
+before creating an archive. After changing the pin, fetch the matching
+toolchain again; renaming an older toolchain or binary is not sufficient.
+The release workflow rejects tags that differ from the source version and
+publishes npm packages only after the GitHub release succeeds.
+
+The standalone installer defaults to the latest published Capy release and
+reads the bundled Rey version. `capy init` and manifests missing a package
+version intentionally start user projects at `0.1.0`, independently of the
+Capy CLI version.
 
 ## Archive layout and targets
 
@@ -92,14 +107,14 @@ contains the latest version, one archive URL per target, and a SHA-256 value
 for each archive:
 
 ```toml
-version = "0.1.0"
-darwin-arm64 = "https://.../capy-v0.1.0-darwin-arm64.tar.gz"
+version = "0.1.1"
+darwin-arm64 = "https://.../capy-v0.1.1-darwin-arm64.tar.gz"
 darwin-arm64-sha256 = "..."
-darwin-x86_64 = "https://.../capy-v0.1.0-darwin-x86_64.tar.gz"
+darwin-x86_64 = "https://.../capy-v0.1.1-darwin-x86_64.tar.gz"
 darwin-x86_64-sha256 = "..."
-linux-x86_64 = "https://.../capy-v0.1.0-linux-x86_64.tar.gz"
+linux-x86_64 = "https://.../capy-v0.1.1-linux-x86_64.tar.gz"
 linux-x86_64-sha256 = "..."
-linux-aarch64 = "https://.../capy-v0.1.0-linux-aarch64.tar.gz"
+linux-aarch64 = "https://.../capy-v0.1.1-linux-aarch64.tar.gz"
 linux-aarch64-sha256 = "..."
 ```
 

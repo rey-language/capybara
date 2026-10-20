@@ -1,7 +1,7 @@
 # Capybara
 
 Capybara is the `capy` command-line front door to the Rey compiler, runtime,
-and standard library. The beta is version `0.1.0` and bundles Rey `0.3.0`.
+and standard library. The beta is version `0.1.1` and bundles Rey `0.3.1`.
 
 ## Install
 
@@ -13,7 +13,7 @@ curl -fsSL https://raw.githubusercontent.com/rey-language/capybara/main/install.
 
 It installs:
 
-- `capy` plus the bundled Rey `0.3.0` compiler, runtime, and standard library
+- `capy` plus the bundled Rey `0.3.1` compiler, runtime, and standard library
 - `clang` on Linux, or Xcode Command Line Tools on macOS, when missing
 - `git`, `curl`, and `tar` on Linux when missing
 - `~/.capy/bin` on `PATH` in zsh, bash, and fish profiles
@@ -23,7 +23,7 @@ It installs:
 The installer downloads the latest release archive, verifies its SHA-256,
 installs under `$CAPY_HOME` (default `~/.capy`), and finishes with `capy doctor`.
 
-Set `CAPY_VERSION=0.1.0` to pin a version, `CAPY_HOME=...` to choose another
+Set `CAPY_VERSION=0.1.1` to pin a version, `CAPY_HOME=...` to choose another
 location, or `CAPY_ARCHIVE=/path/to/capy.tar.gz` to install a local build.
 `CAPY_SKIP_DEPS=1` skips system package installation and
 `CAPY_SKIP_PROFILE=1` leaves shell profiles untouched.
@@ -114,11 +114,11 @@ once per 24 hours and does not fail the command it accompanies.
 
 ## Beta limits
 
-- Capybara bundles Rey `0.3.0`; this beta does not select compiler versions per
+- Capybara bundles Rey `0.3.1`; this beta does not select compiler versions per
   project.
 - The bundled compiler always optimizes. `--release` is accepted by `run` and
   `build` with a warning; `build --target` is rejected.
-- Rey `0.3.0`'s native compiler supports a conservative subset of the language
+- Rey `0.3.1`'s native compiler supports a conservative subset of the language
   and builtins. Capybara ships a compatibility standard library in
   `compat/std/`; its behavior and limits are documented in the
   [build contract](docs/CONTRACT.md#bundled-compatibility-std). The supported

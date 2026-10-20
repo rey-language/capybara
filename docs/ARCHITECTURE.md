@@ -52,7 +52,7 @@ The first valid candidate wins:
 3. `<exeDir>/../vendor/toolchain` (development layout).
 4. `<exeDir>/toolchain`.
 5. `~/.capy/toolchains/current`.
-6. `~/.capy/toolchains/0.3.0`.
+6. `~/.capy/toolchains/0.3.1`.
 7. `rey` on `PATH`, deriving the root from the binary and locating std via
    `$REY_STD_PATH` or `~/.reyc/std/src`.
 
@@ -127,7 +127,7 @@ Homebrew and npm installations are directed to their package managers instead.
 
 ## Compiler constraints behind the beta
 
-The Rey `0.3.0` compiler has a stub type checker and code-generation
+The Rey `0.3.1` compiler has a stub type checker and code-generation
 constraints that shaped this CLI and its own source. Beta implementation code
 uses conservative Rey: no closures, generics, async, or threads; explicit local
 types; semicolons on statements; and `loop { ... break; }` instead of

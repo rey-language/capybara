@@ -1,6 +1,6 @@
 // Filesystem helpers for the native Rey compiler.
 //
-// The 0.3.0 native compiler exposes a small set of builtins (readFile,
+// The 0.3.1 native compiler exposes a small set of builtins (readFile,
 // writeFile, appendFile, fileExists, deleteFile, listDir, exec). The upstream
 // std targets the interpreter's larger native-* surface, so this module keeps
 // the same public API and implements the missing pieces with those builtins

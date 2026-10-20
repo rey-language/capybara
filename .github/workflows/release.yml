@@ -10,11 +10,22 @@ permissions:
 
 jobs:
   preflight:
-    name: Check release credentials
+    name: Check release version and credentials
     runs-on: ubuntu-22.04
     outputs:
       npm: ${{ steps.npm.outputs.enabled }}
     steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Validate release tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          source_version="$(sed -n '/func capyVersion()/,/}/s/.*return "\([^"]*\)";.*/\1/p' src/capy/version.rey)"
+          [[ "$RELEASE_TAG" == "v$source_version" ]] || {
+            echo "::error::Release tag $RELEASE_TAG must match source version v$source_version"
+            exit 1
+          }
       - name: Check npm token
         id: npm
         env:
@@ -29,6 +40,7 @@ jobs:
 
   build:
     name: Build ${{ matrix.target }}
+    needs: preflight
     strategy:
       fail-fast: false
       matrix:
@@ -61,6 +73,16 @@ jobs:
           "$GITHUB_WORKSPACE/build/capy" run
       - name: Package release archive
         run: bash scripts/package.sh "$CAPY_TARGET"
+      - name: Validate packaged installer
+        run: |
+          install_home="$(mktemp -d)"
+          HOME="$install_home" \
+            CAPY_ARCHIVE="$PWD/build/dist/capy-v${CAPY_VERSION#v}-$CAPY_TARGET.tar.gz" \
+            CAPY_SKIP_DEPS=1 \
+            CAPY_SKIP_PROFILE=1 \
+            bash install.sh
+          HOME="$install_home" PATH="$install_home/.capy/bin:$PATH" capy --version
+          HOME="$install_home" PATH="$install_home/.capy/bin:$PATH" rey --version
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -98,26 +120,26 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Capy ${{ github.ref_name }}
           body: |
-            Capy ${{ github.ref_name }} is the first beta of the Capy CLI for the
-            Rey programming language.
+            Capy ${{ github.ref_name }} is a patch release of the Capy CLI for
+            the Rey programming language.
 
             ## Install
 
             ```sh
-            curl -fsSL https://raw.githubusercontent.com/rey-language/capybara/main/install.sh | sh
+            curl -fsSL https://github.com/rey-language/capybara/releases/download/${{ github.ref_name }}/install.sh | CAPY_VERSION=${{ github.ref_name }} bash
             ```
 
             The installer downloads the archive for your platform, verifies its
-            SHA-256 checksum, installs `capy` and the bundled Rey 0.3.0
+            SHA-256 checksum, installs `capy` and the bundled Rey 0.3.1
             compiler/runtime/standard library under `~/.capy`, bootstraps
             clang/Xcode Command Line Tools when needed, migrates a legacy
             `~/.rey` installation, and configures your shell.
 
             ## Included
 
-            - `capy` 0.1.0 CLI
-            - Rey 0.3.0 compiler, runtime, and compatibility standard library
-            - Release archives for macOS arm64/x64 and Linux x64/arm64
+            - `capy` 0.1.1 CLI
+            - Rey 0.3.1 compiler, runtime, and compatibility standard library
+            - Release archives for macOS arm64 and x86-64, and Linux x86-64 and AArch64
             - `latest.toml` update manifest and SHA-256 checksums
             - `install.sh` standalone installer
 
@@ -136,7 +158,7 @@ jobs:
   npm:
     name: Publish npm packages
     needs:
-      - build
+      - release
       - preflight
     if: needs.preflight.outputs.npm == 'true'
     runs-on: ubuntu-22.04

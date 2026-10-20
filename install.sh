@@ -369,11 +369,13 @@ if [[ -n "${CAPY_VERSION:-}" && "$CAPY_VERSION" != "$ARCHIVE_VERSION" ]]; then
 fi
 CAPY_VERSION="$ARCHIVE_VERSION"
 
-REY_VERSION="${REY_VERSION:-}"
-if [[ -z "$REY_VERSION" ]]; then
-    REY_VERSION="$("$SOURCE_DIR/libexec/toolchain/bin/rey" --version 2>/dev/null | sed -n 's/^rey //p' | head -n 1 || true)"
+ACTUAL_REY_VERSION="$("$SOURCE_DIR/libexec/toolchain/bin/rey" --version)" || fail "could not read the bundled Rey version"
+[[ "$ACTUAL_REY_VERSION" == "rey "* ]] || fail "unexpected Rey version output: $ACTUAL_REY_VERSION"
+ACTUAL_REY_VERSION="${ACTUAL_REY_VERSION#rey }"
+if [[ -n "${REY_VERSION:-}" && "$REY_VERSION" != "$ACTUAL_REY_VERSION" ]]; then
+    fail "REY_VERSION $REY_VERSION does not match bundled Rey $ACTUAL_REY_VERSION"
 fi
-[[ -n "$REY_VERSION" ]] || REY_VERSION="0.3.0"
+REY_VERSION="$ACTUAL_REY_VERSION"
 [[ "$REY_VERSION" =~ ^[0-9A-Za-z._-]+$ ]] || fail "archive has an invalid Rey version: $REY_VERSION"
 
 info "Installing Capy $CAPY_VERSION with Rey $REY_VERSION"

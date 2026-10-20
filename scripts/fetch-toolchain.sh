@@ -8,7 +8,7 @@ fail() {
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-REY_VERSION="${REY_VERSION:-0.3.0}"
+REY_VERSION="${REY_VERSION:-0.3.1}"
 OS_NAME="$(uname -s)"
 ARCH_NAME="$(uname -m)"
 
@@ -68,6 +68,8 @@ fi
 if [[ -f "$STAGE_DIR/bin/rey-v0" ]]; then
     chmod +x "$STAGE_DIR/bin/rey-v0"
 fi
+ACTUAL_VERSION="$("$STAGE_DIR/bin/rey" --version)" || fail "could not read the fetched Rey version"
+[[ "$ACTUAL_VERSION" == "rey $REY_VERSION" ]] || fail "expected rey $REY_VERSION, got: $ACTUAL_VERSION"
 if [[ -d "$REPO_ROOT/compat/std" ]]; then
     rm -rf "$STAGE_DIR/std/src"
     cp -R "$REPO_ROOT/compat/std" "$STAGE_DIR/std/src"

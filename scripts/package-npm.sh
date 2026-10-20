@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-CAPY_VERSION="${CAPY_VERSION:-0.1.0}"
+CAPY_VERSION="${CAPY_VERSION:-0.1.1}"
 CAPY_VERSION="${CAPY_VERSION#v}"
 DIST_DIR="$REPO_ROOT/build/dist"
 NPM_ROOT="$REPO_ROOT/build/npm"

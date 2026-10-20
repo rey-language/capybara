@@ -7,6 +7,7 @@ import capy::project;
 import capy::types::{Context};
 import capy::util;
 import capy::version;
+import capy::toolchain;
 
 func report(label: string, ok: bool, detail: string): void {
     if ok {
@@ -78,9 +79,13 @@ pub func execute(ctx: Context, args: Vec<string>): int {
 
     var toolchainOk = ctx.tcFound && util.isDir(ctx.tcRoot) && util.isFile(ctx.tcRey);
     report("Toolchain root", toolchainOk, ctx.tcRoot);
-    var reyOk = toolchainOk && ctx.tcVersion == version.reyVersion();
-    var reyDetail = ctx.tcVersion;
-    if ctx.tcVersion != version.reyVersion() {
+    var actualReyVersion = ctx.tcVersion;
+    if ctx.tcFound {
+        actualReyVersion = toolchain.actualVersion(ctx.tcRey);
+    }
+    var reyOk = toolchainOk && actualReyVersion == version.reyVersion();
+    var reyDetail = actualReyVersion;
+    if actualReyVersion != version.reyVersion() {
         reyDetail = reyDetail + " (expected " + version.reyVersion() + ")";
     }
     report("Rey version", reyOk, reyDetail);

@@ -10,7 +10,7 @@ func versionFor(reyPath: string): string {
     args.push("--version");
     var result = util.runArgs(reyPath, args);
     if result.code != 0 {
-        return reyVersion();
+        return "unknown";
     }
     var line = result.stdout.trim();
     if line.startsWith("rey ") {
@@ -40,8 +40,14 @@ func fromRoot(rootPath: string, stdPath: string, ctx: Context): Toolchain {
         error: "",
     };
     setEnvFor(tc, ctx);
-    tc.version = versionFor(tc.rey);
+    // The Capy release pins its bundled compiler version. Avoid starting a
+    // second Rey process on every command; doctor can request the live value.
+    tc.version = reyVersion();
     return tc;
+}
+
+pub func actualVersion(reyPath: string): string {
+    return versionFor(reyPath);
 }
 
 func resolvedBinary(path: string, ctx: Context): string {

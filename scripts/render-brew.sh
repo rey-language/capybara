@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-CAPY_VERSION="${1:-${CAPY_VERSION:-0.1.0}}"
+CAPY_VERSION="${1:-${CAPY_VERSION:-0.1.1}}"
 CAPY_VERSION="${CAPY_VERSION#v}"
 DIST_DIR="${2:-$REPO_ROOT/build/dist}"
 TEMPLATE="$REPO_ROOT/packaging/brew/capy.rb"
@@ -16,7 +16,7 @@ fail() {
 
 [[ -f "$TEMPLATE" ]] || fail "missing formula template: $TEMPLATE"
 mkdir -p "$(dirname "$OUT")"
-sed "s/0\\.1\\.0/$CAPY_VERSION/g" "$TEMPLATE" > "$OUT"
+sed "s/0\\.1\\.1/$CAPY_VERSION/g" "$TEMPLATE" > "$OUT"
 
 for target in darwin-arm64 darwin-x86_64 linux-x86_64 linux-aarch64; do
     case "$target" in

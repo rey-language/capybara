@@ -1,7 +1,7 @@
 # Rey beta primer for Capybara contributors
 
 This is a deliberately small subset of Rey that is known to compile with the
-v0.3.0 toolchain. When in doubt, copy the idioms used under
+v0.3.1 toolchain. When in doubt, copy the idioms used under
 `std/src/` (or `~/.rey/std/src/`).
 
 ## Entry point

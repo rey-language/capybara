@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-CAPY_VERSION="${CAPY_VERSION:-0.1.0}"
+CAPY_VERSION="${CAPY_VERSION:-0.1.1}"
 CAPY_VERSION="${CAPY_VERSION#v}"
 CAPY_TARGET="${1:-${CAPY_TARGET:-}}"
 
@@ -34,6 +34,21 @@ TOOLCHAIN_DIR="$REPO_ROOT/vendor/toolchain"
 }
 [[ -d "$TOOLCHAIN_DIR/std/src" ]] || {
     printf 'error: toolchain is missing std/src\n' >&2
+    exit 1
+}
+
+PINNED_REY_VERSION="$(sed -n '/func reyVersion()/,/}/s/.*return "\([^"]*\)";.*/\1/p' "$REPO_ROOT/src/capy/version.rey")"
+ACTUAL_REY_VERSION="$("$TOOLCHAIN_DIR/bin/rey" --version)"
+[[ "$ACTUAL_REY_VERSION" == "rey $PINNED_REY_VERSION" ]] || {
+    printf 'error: expected rey %s, got: %s\n' "$PINNED_REY_VERSION" "$ACTUAL_REY_VERSION" >&2
+    exit 1
+}
+# Capy initializes its home even for --version; keep verification isolated.
+VERIFY_HOME="$(mktemp -d "${TMPDIR:-/tmp}/capy-package.XXXXXX")"
+trap 'rm -rf "$VERIFY_HOME"' EXIT
+ACTUAL_CAPY_VERSION="$(HOME="$VERIFY_HOME" CAPY_HOME="$VERIFY_HOME/.capy" "$REPO_ROOT/build/capy" --version)"
+[[ "$ACTUAL_CAPY_VERSION" == "capy $CAPY_VERSION (rey $PINNED_REY_VERSION)" ]] || {
+    printf 'error: expected capy %s (rey %s), got: %s\n' "$CAPY_VERSION" "$PINNED_REY_VERSION" "$ACTUAL_CAPY_VERSION" >&2
     exit 1
 }
 
