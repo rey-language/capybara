@@ -1,0 +1,346 @@
+src/capy/commands/build.rey
+  s_b8d87083f5e51c::t_1af1351caac245 1-10,12-17,21-30,39-97,99-106
+  s_b8d87083f5e51c::t_517950e8413fd6 11,18-20,31-38
+  s_b8d87083f5e51c::t_07aa01731f2464 98
+src/capy/commands/doctor.rey
+  s_19ae06edce3865::t_f1d885600df7c7 7
+  s_19ae06edce3865::t_6a08856292ca39 1-6,8-110
+src/capy/toolchain.rey
+  s_88dac62ba19f12::t_3bcafd154ae291 3,6,13,90,125
+  s_88dac62ba19f12::t_0f30a163278210 1-2,4-5,7-12,14-32,34-38,40-41,45-89,91-124,126-171
+  s_88dac62ba19f12::t_79fb3b4d072468 33,39,42-44
+src/capy/project.rey
+  s_97b00bc657ffd6::t_e1ba3a06a147e0 1-63
+src/capy/commands/clean.rey
+  s_19ae06edce3865::t_6a08856292ca39 1-3,5-41
+  s_19ae06edce3865::t_f1d885600df7c7 4
+src/capy/commands/target.rey
+  s_b8d87083f5e51c::t_1af1351caac245 1-90
+src/capy/commands/self_update.rey
+  s_224760cd12fb27::t_e2248b263244b6 128-131,163-166
+  s_224760cd12fb27::t_0804f05c8313ac 83-86,181-221
+  s_224760cd12fb27::t_78fa92d37f9fc0 13,137,167
+  s_224760cd12fb27::t_7c1a11e8bf9b3a 1-12,14-82,87-127,132-136,138-162,168-180,222-242,247-256,259-299
+  s_224760cd12fb27::t_7a5ccec120844a 243-246,257-258
+  s_224760cd12fb27::t_54c39b867b3043 300-302
+  h_b8c068798e4e71 303-345
+src/capy/commands/test.rey
+  s_ae4d86ec8c3c20::t_93f67c81fca742 1-66,71-133,135,139-142,146-156
+  s_ae4d86ec8c3c20::t_0dbdfb8c76411e 67-70,134,136-138,143-145
+src/capy/commands/check.rey
+  s_b8d87083f5e51c::t_1af1351caac245 1-42
+scripts/package.sh
+  s_346efadde2a922::t_d1d09073de5c66 1-70
+  s_346efadde2a922::t_92d58fe94aed54 71
+packaging/npm/cli/package.json
+  s_346efadde2a922::t_80fc04da28919a 1-22
+packaging/npm/cli/README.md
+  s_346efadde2a922::t_80fc04da28919a 1-13
+packaging/npm/platforms/linux-x64/package.json
+  s_346efadde2a922::t_80fc04da28919a 1-20
+packaging/brew/capy.rb
+  s_346efadde2a922::t_84ae0b7ae0baf7 2
+  s_346efadde2a922::t_80fc04da28919a 1,3-45
+src/main.rey
+  s_88dac62ba19f12::t_ca6dac5a63382f 1-5
+src/capy/deps.rey
+  s_224760cd12fb27::t_e2248b263244b6 5,16,96,147
+  s_224760cd12fb27::t_7c1a11e8bf9b3a 1-4,6-15,17-95,97-146,148-193,195-203
+  s_224760cd12fb27::t_cc6987d9589fc5 194
+src/capy/commands/update.rey
+  s_224760cd12fb27::t_e4f538a78d04b0 2,9-29,31,33-34,44,57
+  s_224760cd12fb27::t_7c1a11e8bf9b3a 1,3-8,30,42-43,45-56,58-62
+  s_224760cd12fb27::t_29ec628ae3588b 32,35,41
+  s_224760cd12fb27::t_838e9406651183 36-39
+  s_224760cd12fb27::t_e2248b263244b6 40
+src/capy/commands/install.rey
+  s_224760cd12fb27::t_ad3e0ec8911946 72-75
+  s_224760cd12fb27::t_e4f538a78d04b0 8-37,78-79,83-85,90-91
+  s_224760cd12fb27::t_7c1a11e8bf9b3a 2-7,38-41,46-47,53,55-71,76-77,80-82,86-89,92-96
+  s_224760cd12fb27::t_838e9406651183 48-52
+  s_224760cd12fb27::t_cc6987d9589fc5 1,42-45,54
+packaging/install.sh
+  s_346efadde2a922::t_80fc04da28919a 1-24
+src/capy/commands/init.rey
+  h_b8c068798e4e71 62
+  s_19ae06edce3865::t_f1d885600df7c7 4,32-33
+  s_19ae06edce3865::t_6a08856292ca39 1-3,5-31,34-61,63-74
+src/capy/installer.rey
+  s_88dac62ba19f12::t_725e98713aa9a2 1-90
+packaging/npm/cli/bin/capy.js
+  s_346efadde2a922::t_80fc04da28919a 1-46
+packaging/npm/platforms/darwin-arm64/package.json
+  s_346efadde2a922::t_80fc04da28919a 1-20
+src/capy/app.rey
+  s_88dac62ba19f12::t_6bda319c60a5f8 1-150
+  s_88dac62ba19f12::t_c324661a6049fc 151-153
+  h_b8c068798e4e71 154
+src/capy/commands/run.rey
+  s_b8d87083f5e51c::t_517950e8413fd6 18-38,43
+  s_b8d87083f5e51c::t_07aa01731f2464 49-52,75
+  s_b8d87083f5e51c::t_1af1351caac245 1-17,39-42,44-48,53-74,76-84
+src/capy/manifest.rey
+  s_97b00bc657ffd6::t_e1ba3a06a147e0 1,3-83,85-94,96-193,204-206,208-222,229-236,238-239,241-245
+  s_97b00bc657ffd6::t_35204cf81a6c3a 2,84,95,194-203,207,223-228,237,240
+scripts/package-npm.sh
+  s_346efadde2a922::t_84ae0b7ae0baf7 12-13,56
+  s_346efadde2a922::t_d1d09073de5c66 1-11,14-55,57-91
+packaging/README.md
+  s_346efadde2a922::t_80fc04da28919a 1-39
+  s_346efadde2a922::t_a033809916fbd7 40-42
+  h_b8c068798e4e71 43-51
+packaging/npm/platforms/darwin-x64/package.json
+  s_346efadde2a922::t_80fc04da28919a 1-20
+packaging/npm/platforms/linux-arm64/package.json
+  s_346efadde2a922::t_80fc04da28919a 1-20
+scripts/fetch-toolchain.sh
+  s_346efadde2a922::t_d1d09073de5c66 1-86
+.github/workflows/release.yml
+  s_346efadde2a922::t_d1d09073de5c66 1-112
+  s_346efadde2a922::t_82b084e5800588 113-115
+  h_b8c068798e4e71 116-202
+scripts/build.sh
+  s_346efadde2a922::t_04a78676bc9162 8
+  s_346efadde2a922::t_d1d09073de5c66 1-7,9-23
+docs/ARCHITECTURE.md
+  s_5fdb69f23c022f::t_b601ee75bba736 1-130
+docs/COMMANDS.md
+  s_5fdb69f23c022f::t_d85aa6b1ca3bb0 1-222
+docs/MIGRATION.md
+  s_5fdb69f23c022f::t_5fc958d30ae7ec 1-80
+docs/REGISTRY.md
+  s_5fdb69f23c022f::t_ad888f879173a7 1-67
+.gitattributes
+  h_b8c068798e4e71 1-5
+.github/workflows/ci.yml
+  h_b8c068798e4e71 1-66
+.gitignore
+  h_b8c068798e4e71 1-21
+CHANGELOG.md
+  h_b8c068798e4e71 1-30
+LICENSE
+  h_b8c068798e4e71 1-21
+README.md
+  h_b8c068798e4e71 1-131
+capy.toml
+  h_b8c068798e4e71 1-6
+compat/std/binary/README.md
+  h_b8c068798e4e71 1-22
+compat/std/binary/main.rey
+  h_b8c068798e4e71 1-109
+compat/std/cli/README.md
+  h_b8c068798e4e71 1-22
+compat/std/cli/main.rey
+  h_b8c068798e4e71 1-82
+compat/std/collections/README.md
+  h_b8c068798e4e71 1-67
+compat/std/collections/main.rey
+  h_b8c068798e4e71 1-401
+compat/std/compress/README.md
+  h_b8c068798e4e71 1-22
+compat/std/compress/main.rey
+  h_b8c068798e4e71 1-95
+compat/std/core/README.md
+  h_b8c068798e4e71 1-31
+compat/std/core/main.rey
+  h_b8c068798e4e71 1-34
+compat/std/crypto/README.md
+  h_b8c068798e4e71 1-32
+compat/std/crypto/main.rey
+  h_b8c068798e4e71 1-191
+compat/std/csv/README.md
+  h_b8c068798e4e71 1-16
+compat/std/csv/main.rey
+  h_b8c068798e4e71 1-122
+compat/std/env/README.md
+  h_b8c068798e4e71 1-25
+compat/std/env/main.rey
+  h_b8c068798e4e71 1-52
+compat/std/fmt/README.md
+  h_b8c068798e4e71 1-28
+compat/std/fmt/main.rey
+  h_b8c068798e4e71 1-107
+compat/std/fs/README.md
+  h_b8c068798e4e71 1-42
+compat/std/fs/main.rey
+  h_b8c068798e4e71 1-237
+compat/std/http/README.md
+  h_b8c068798e4e71 1-22
+compat/std/http/main.rey
+  h_b8c068798e4e71 1-177
+compat/std/image/README.md
+  h_b8c068798e4e71 1-20
+compat/std/image/main.rey
+  h_b8c068798e4e71 1-58
+compat/std/io/README.md
+  h_b8c068798e4e71 1-27
+compat/std/io/main.rey
+  h_b8c068798e4e71 1-161
+compat/std/json/README.md
+  h_b8c068798e4e71 1-17
+compat/std/json/main.rey
+  h_b8c068798e4e71 1-85
+compat/std/linalg/README.md
+  h_b8c068798e4e71 1-20
+compat/std/linalg/main.rey
+  h_b8c068798e4e71 1-88
+compat/std/log/README.md
+  h_b8c068798e4e71 1-13
+compat/std/log/main.rey
+  h_b8c068798e4e71 1-72
+compat/std/math/README.md
+  h_b8c068798e4e71 1-36
+compat/std/math/basic.rey
+  h_b8c068798e4e71 1-38
+compat/std/math/extra.rey
+  h_b8c068798e4e71 1-15
+compat/std/math/main.rey
+  h_b8c068798e4e71 1-299
+compat/std/math/stats.rey
+  h_b8c068798e4e71 1-33
+compat/std/math/trig.rey
+  h_b8c068798e4e71 1-69
+compat/std/mem/README.md
+  h_b8c068798e4e71 1-25
+compat/std/mem/main.rey
+  h_b8c068798e4e71 1-78
+compat/std/net/README.md
+  h_b8c068798e4e71 1-23
+compat/std/net/main.rey
+  h_b8c068798e4e71 1-90
+compat/std/os/README.md
+  h_b8c068798e4e71 1-29
+compat/std/os/main.rey
+  h_b8c068798e4e71 1-109
+compat/std/process/README.md
+  h_b8c068798e4e71 1-27
+compat/std/process/main.rey
+  h_b8c068798e4e71 1-125
+compat/std/regex/README.md
+  h_b8c068798e4e71 1-22
+compat/std/regex/main.rey
+  h_b8c068798e4e71 1-144
+compat/std/sql/README.md
+  h_b8c068798e4e71 1-42
+compat/std/sql/main.rey
+  h_b8c068798e4e71 1-155
+compat/std/string/README.md
+  h_b8c068798e4e71 1-72
+compat/std/string/main.rey
+  h_b8c068798e4e71 1-479
+compat/std/sync/README.md
+  h_b8c068798e4e71 1-22
+compat/std/sync/main.rey
+  h_b8c068798e4e71 1-73
+compat/std/test/README.md
+  h_b8c068798e4e71 1-26
+compat/std/test/main.rey
+  h_b8c068798e4e71 1-34
+compat/std/time/README.md
+  h_b8c068798e4e71 1-12
+compat/std/time/main.rey
+  h_b8c068798e4e71 1-28
+compat/std/toml/README.md
+  h_b8c068798e4e71 1-15
+compat/std/toml/main.rey
+  h_b8c068798e4e71 1-189
+docs/CONTRACT.md
+  h_b8c068798e4e71 1-642
+docs/RELEASE.md
+  h_b8c068798e4e71 1-140
+docs/REY-PRIMER.md
+  h_b8c068798e4e71 1-93
+install.sh
+  h_b8c068798e4e71 1-613
+scripts/release-manifest.sh
+  h_b8c068798e4e71 1-33
+scripts/render-brew.sh
+  h_b8c068798e4e71 1-41
+src/capy/output.rey
+  h_b8c068798e4e71 1-27
+src/capy/types.rey
+  h_b8c068798e4e71 1-93
+src/capy/util.rey
+  h_b8c068798e4e71 1-272
+src/capy/version.rey
+  h_b8c068798e4e71 1-25
+syntax.md
+  h_b8c068798e4e71 1-772
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "eb37d3b74c288b2deb5ac9bb96d9df657b79221e",
+  "prompts": {},
+  "humans": {
+    "h_b8c068798e4e71": {
+      "author": "Misbah Khursheed <m.misbahkhursheed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_19ae06edce3865": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1587f-9db1-7232-a7f9-73aa5d706f98",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Misbah Khursheed <m.misbahkhursheed@gmail.com>"
+    },
+    "s_224760cd12fb27": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1587f-9db5-7b11-a382-f0fa7268a4ea",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Misbah Khursheed <m.misbahkhursheed@gmail.com>"
+    },
+    "s_346efadde2a922": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1587f-9e89-7780-9863-f2c1f778aefc",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Misbah Khursheed <m.misbahkhursheed@gmail.com>"
+    },
+    "s_5fdb69f23c022f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1587f-9668-7aa2-8de5-afc7ae6594c3",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Misbah Khursheed <m.misbahkhursheed@gmail.com>"
+    },
+    "s_88dac62ba19f12": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1587f-9668-7aa2-8de5-aff7b879bf25",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Misbah Khursheed <m.misbahkhursheed@gmail.com>"
+    },
+    "s_97b00bc657ffd6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1587f-964f-7dd2-8c27-cf8fdd6087fa",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Misbah Khursheed <m.misbahkhursheed@gmail.com>"
+    },
+    "s_ae4d86ec8c3c20": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1587f-9666-7192-bae0-71882daa39ef",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Misbah Khursheed <m.misbahkhursheed@gmail.com>"
+    },
+    "s_b8d87083f5e51c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1587f-9df4-7df3-a450-e45e9ce16cb9",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Misbah Khursheed <m.misbahkhursheed@gmail.com>"
+    }
+  }
+}
