@@ -1,0 +1,154 @@
+import std::env;
+import std::process;
+import capy::types::{Context, emptyContext};
+import capy::util;
+import capy::output;
+import capy::version;
+import capy::toolchain;
+import capy::installer;
+import capy::commands::init;
+import capy::commands::run;
+import capy::commands::build;
+import capy::commands::check;
+import capy::commands::test;
+import capy::commands::clean;
+import capy::commands::doctor;
+import capy::commands::install;
+import capy::commands::update;
+import capy::commands::self_update;
+
+pub func makeContext(argv: Vec<string>): Context {
+    var ctx = emptyContext();
+    ctx.cwd = process.cwd();
+    ctx.home = util.envOr("HOME", "");
+    var capyHome = util.envOr("CAPY_HOME", util.join(ctx.home, ".capy"));
+    ctx.capyHome = util.absolute(capyHome, ctx.cwd);
+    if argv.len() > 0 {
+        var executable = argv[0];
+        if util.isAbsolute(executable) || executable.contains("/") {
+            ctx.exePath = util.absolute(executable, ctx.cwd);
+        } else {
+            var found = process.which(executable);
+            if found.len() > 0 {
+                ctx.exePath = util.absolute(found, ctx.cwd);
+            }
+        }
+    }
+    if ctx.exePath == "" {
+        var capy = process.which("capy");
+        if capy.len() > 0 {
+            ctx.exePath = util.absolute(capy, ctx.cwd);
+        } else {
+            ctx.exePath = util.join(ctx.cwd, "capy");
+        }
+    }
+    ctx.exeDir = util.dirname(ctx.exePath);
+    env.set("CAPY_HOME", ctx.capyHome);
+    installer.ensureHome(ctx);
+    var tc = toolchain.resolve(ctx);
+    ctx.tcFound = tc.found;
+    ctx.tcRoot = tc.root;
+    ctx.tcRey = tc.rey;
+    ctx.tcRuntime = tc.runtime;
+    ctx.tcStd = tc.std;
+    ctx.tcVersion = tc.version;
+    ctx.tcError = tc.error;
+    installer.ensureStdLink(ctx);
+    installer.ensureBinLinks(ctx);
+    return ctx;
+}
+
+pub func usage(): string {
+    return "Usage: capy <command> [options]\n" +
+        "Commands:\n" +
+        "  init       Create a Rey project\n" +
+        "  run        Build and run a project or Rey file\n" +
+        "  build      Build a project or Rey file\n" +
+        "  check      Check a project or Rey file\n" +
+        "  test       Build and run project tests\n" +
+        "  clean      Remove build artifacts\n" +
+        "  doctor     Inspect the Capy and Rey installation\n" +
+        "  install    Install a package dependency\n" +
+        "  update     Update packages or Capy\n" +
+        "  help       Show this help\n" +
+        "  version    Show Capy and Rey versions\n\n" +
+        "Examples:\n" +
+        "  capy init --name hello\n" +
+        "  capy run\n" +
+        "  capy build src/main.rey -o build/app\n" +
+        "  capy check\n" +
+        "  capy test --filter parser\n" +
+        "  capy install rey-postgres@0.1.0\n" +
+        "  capy doctor\n";
+}
+
+pub func versionLine(): string {
+    return "capy " + version.capyVersion() + " (rey " + version.reyVersion() + ")";
+}
+
+func isHelp(value: string): bool {
+    return value == "help" || value == "--help" || value == "-h";
+}
+
+func isVersion(value: string): bool {
+    return value == "version" || value == "--version" || value == "-V";
+}
+
+pub func execute(argv: Vec<string>): int {
+    var ctx = makeContext(argv);
+    var index = 1;
+    var verbose = false;
+    loop {
+        if index >= argv.len() {
+            break;
+        }
+        if argv[index] == "--verbose" || argv[index] == "-v" {
+            verbose = true;
+            index = index + 1;
+        } else {
+            break;
+        }
+    }
+    ctx.verbose = verbose;
+    if index >= argv.len() {
+        output.plain(usage());
+        return 0;
+    }
+    var command = argv[index];
+    if isHelp(command) {
+        output.plain(usage());
+        return 0;
+    }
+    if isVersion(command) {
+        output.plain(versionLine());
+        return 0;
+    }
+    var rest: Vec<string> = Vec.new();
+    index = index + 1;
+    loop {
+        if index >= argv.len() {
+            break;
+        }
+        rest.push(argv[index]);
+        index = index + 1;
+    }
+    if rest.len() > 0 && isHelp(rest[0]) {
+        output.plain(usage());
+        return 0;
+    }
+    if command != "update" {
+        self_update.maybeNotify(ctx);
+    }
+    if command == "init" { return init.execute(ctx, rest); }
+    if command == "run" { return run.execute(ctx, rest); }
+    if command == "build" { return build.execute(ctx, rest); }
+    if command == "check" { return check.execute(ctx, rest); }
+    if command == "test" { return test.execute(ctx, rest); }
+    if command == "clean" { return clean.execute(ctx, rest); }
+    if command == "doctor" { return doctor.execute(ctx, rest); }
+    if command == "install" { return install.execute(ctx, rest); }
+    if command == "update" { return update.execute(ctx, rest); }
+    output.error("Unknown command: " + command);
+    output.plain("Run 'capy help' for usage.");
+    return 1;
+}

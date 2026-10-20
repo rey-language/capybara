@@ -1,0 +1,96 @@
+import capy::types::{Context, Manifest, emptyManifest};
+import capy::util;
+import capy::output;
+import capy::manifest;
+import capy::project;
+import capy::deps;
+
+func hasFlag(args: Vec<string>, name: string): bool {
+    var wanted = "--" + name;
+    for arg in args {
+        if arg == wanted { return true; }
+    }
+    return false;
+}
+
+func positionals(args: Vec<string>): Vec<string> {
+    var result: Vec<string> = Vec.new();
+    var afterSeparator = false;
+    for arg in args {
+        if !afterSeparator && arg == "--" {
+            afterSeparator = true;
+        } else if afterSeparator || !util.startsWith(arg, "-") {
+            result.push(arg);
+        }
+    }
+    return result;
+}
+
+func registryRequested(args: Vec<string>): bool {
+    for arg in args {
+        if arg == "--registry" || util.startsWith(arg, "--registry=") {
+            return true;
+        }
+    }
+    return false;
+}
+
+func addRequestedPackage(m: Manifest, specText: string, locked: bool): Manifest {
+    var parts = util.splitOnce(specText, "@");
+    var name = parts[0];
+    var spec = parts[1];
+    if name == "" {
+        output.error("package name cannot be empty");
+        return emptyManifest();
+    }
+    if spec == "" { spec = "*"; }
+    if locked {
+        if !m.dependencies.has(name) {
+            output.error("cannot add dependencies with --locked");
+            return emptyManifest();
+        }
+        if parts[1] != "" && spec != "*" && m.dependencies.get(name) != spec {
+            output.error("cannot change dependencies with --locked");
+            return emptyManifest();
+        }
+        return m;
+    }
+    var updated = manifest.addDependency(m, name, spec);
+    manifest.write(updated.path, updated.name, updated.version, updated.dependencies);
+    return updated;
+}
+
+pub func execute(ctx: Context, args: Vec<string>): int {
+    var root = project.findRoot(ctx.cwd);
+    if root == "" {
+        output.error("no capy.toml found; run capy init first");
+        return 1;
+    }
+    var m = manifest.loadAt(root);
+    if !m.found {
+        output.error(m.error);
+        return 1;
+    }
+    if registryRequested(args) {
+        output.error("custom registries are not supported in this beta");
+        return 1;
+    }
+    var packages = positionals(args);
+    if packages.len() > 1 {
+        output.error("install accepts at most one package");
+        return 1;
+    }
+    var locked = hasFlag(args, "locked");
+    if packages.len() == 1 {
+        m = addRequestedPackage(m, packages[0], locked);
+        if !m.found {
+            return 1;
+        }
+    }
+    var force = hasFlag(args, "force");
+    var offline = hasFlag(args, "offline");
+    if deps.installAll(ctx, m, locked, force, offline) {
+        return 0;
+    }
+    return 1;
+}

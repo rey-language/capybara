@@ -1,0 +1,21 @@
+# Capybara build output
+build/
+vendor/
+std
+!compat/std/
+!compat/std/**
+.capy/
+
+# Release artifacts
+dist/
+*.tar.gz
+*.zip
+
+# Packaging
+node_modules/
+npm-debug.log*
+
+# Editor/OS noise
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,41 @@
+import std::cli;
+import capy::output;
+import capy::project;
+import capy::types::{Context};
+import capy::util;
+
+pub func execute(ctx: Context, args: Vec<string>): int {
+    var parsed = cli.parseArgs(args);
+    var cleanAll = cli.hasFlag(parsed, "all");
+    var root = project.findRoot(ctx.cwd);
+    if root == "" {
+        output.error("not inside a Capybara project");
+        return 1;
+    }
+
+    var removed = false;
+    var buildPath = project.buildDir(root);
+    if util.exists(buildPath) {
+        util.removeAll(buildPath);
+        output.info("Removed " + buildPath);
+        removed = true;
+    }
+    if cleanAll {
+        var vendorPath = project.vendorDir(root);
+        if util.exists(vendorPath) {
+            util.removeAll(vendorPath);
+            output.info("Removed " + vendorPath);
+            removed = true;
+        }
+        var lockPath = util.join(root, "capy.lock");
+        if util.exists(lockPath) {
+            util.removeAll(lockPath);
+            output.info("Removed " + lockPath);
+            removed = true;
+        }
+    }
+    if !removed {
+        output.info("Nothing to clean");
+    }
+    return 0;
+}

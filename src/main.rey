@@ -1,0 +1,5 @@
+import capy::app;
+
+func main(): void {
+    exit(app.execute(args()));
+}

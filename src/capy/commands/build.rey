@@ -1,0 +1,106 @@
+import std::cli;
+import capy::types::{Context, ExecResult};
+import capy::util;
+import capy::output;
+import capy::toolchain;
+import capy::project;
+import capy::commands::target::{Target, resolve, ctxToolchain};
+
+func normalizeOutputArgs(args: Vec<string>): Vec<string> {
+    var result: Vec<string> = Vec.new();
+    var releaseCount = 0;
+    var i = 0;
+    loop {
+        if i >= args.len() {
+            break;
+        }
+        var arg = args[i];
+        if arg == "--release" {
+            releaseCount = releaseCount + 1;
+        } else if arg == "-o" {
+            result.push("--output");
+            if i + 1 < args.len() {
+                i = i + 1;
+                result.push(args[i]);
+            }
+        } else if util.startsWith(arg, "-o=") {
+            result.push("--output=" + arg.slice(3, arg.len()));
+        } else {
+            result.push(arg);
+        }
+        i = i + 1;
+    }
+    i = 0;
+    loop {
+        if i >= releaseCount {
+            break;
+        }
+        result.push("--release");
+        i = i + 1;
+    }
+    return result;
+}
+
+func printResult(result: ExecResult): void {
+    if result.stdout != "" {
+        output.plain(result.stdout);
+    }
+    if result.stderr != "" {
+        eprintln(result.stderr);
+    }
+}
+
+pub func execute(ctx: Context, args: Vec<string>): int {
+    var parsed = cli.parseArgs(normalizeOutputArgs(args));
+    if cli.hasFlag(parsed, "target") || cli.getOption(parsed, "target", "") != "" {
+        output.error("cross-compilation is not supported in this beta");
+        return 1;
+    }
+    if cli.hasFlag(parsed, "release") {
+        output.warn("the bundled compiler always optimizes; release and target flags are not supported in this beta");
+    }
+    var outputArg = cli.getOption(parsed, "output", "");
+    if cli.hasFlag(parsed, "output") && outputArg == "" {
+        output.error("--output requires a path");
+        return 1;
+    }
+    var positionals = cli.getPositionals(parsed);
+    if positionals.len() > 1 {
+        output.error("build accepts at most one file argument");
+        return 1;
+    }
+    var fileArg = "";
+    if positionals.len() == 1 {
+        fileArg = positionals[0];
+    }
+    var resolved: Target = resolve(ctx, fileArg);
+    if !resolved.ok {
+        output.error(resolved.error);
+        return 1;
+    }
+    var tc = ctxToolchain(ctx);
+    if !toolchain.require(tc) {
+        return 1;
+    }
+
+    var outputPath = "";
+    if outputArg != "" {
+        outputPath = util.absolute(outputArg, ctx.cwd);
+    } else if fileArg == "" {
+        outputPath = project.buildPath(resolved.root, resolved.name);
+    } else {
+        var outputRoot = resolved.root;
+        if outputRoot == "" {
+            outputRoot = ctx.cwd;
+        }
+        outputPath = util.join(util.join(outputRoot, "build"), resolved.name);
+    }
+    outputPath = util.absolute(outputPath, ctx.cwd);
+    util.mkdirAll(util.dirname(outputPath));
+    var result = toolchain.build(tc, resolved.entry, outputPath);
+    printResult(result);
+    if result.code == 0 {
+        output.plain("Built " + outputPath);
+    }
+    return result.code;
+}

@@ -1,0 +1,25 @@
+import std::env;
+
+pub func capyVersion(): string {
+    return "0.1.0";
+}
+
+pub func reyVersion(): string {
+    return "0.3.0";
+}
+
+pub func registryUrl(): string {
+    return env.getOr("CAPY_REGISTRY_URL", "https://github.com/rey-language/packages.git");
+}
+
+pub func registryRepo(): string {
+    return "rey-language/packages";
+}
+
+pub func updateManifestUrl(): string {
+    return env.getOr("CAPY_UPDATE_MANIFEST", "https://github.com/rey-language/capybara/releases/latest/download/latest.toml");
+}
+
+pub func releasesBase(): string {
+    return env.getOr("CAPY_RELEASES_BASE", "https://github.com/rey-language/capybara/releases/download");
+}

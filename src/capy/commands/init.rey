@@ -1,0 +1,74 @@
+import std::cli;
+import capy::manifest;
+import capy::output;
+import capy::types::{Context};
+import capy::util;
+
+func sanitizeName(value: string): string {
+    var lower = value.toLower();
+    var result = "";
+    var i = 0;
+    loop {
+        if i >= lower.len() {
+            break;
+        }
+        var code = int(lower[i]);
+        if (code >= 97 && code <= 122) || (code >= 48 && code <= 57) ||
+            code == 46 || code == 95 || code == 45 {
+            result = result + lower[i].toString();
+        }
+        i = i + 1;
+    }
+    if result == "" {
+        return "app";
+    }
+    return result;
+}
+
+pub func execute(ctx: Context, args: Vec<string>): int {
+    var parsed = cli.parseArgs(args);
+    var force = cli.hasFlag(parsed, "force");
+    var requestedName = cli.getOption(parsed, "name", "");
+    var options: HashMap<string, string> = parsed.options;
+    if !options.has("name") {
+        requestedName = util.basename(ctx.cwd);
+    }
+    var name = sanitizeName(requestedName);
+    var manifestPath = util.join(ctx.cwd, "capy.toml");
+    var mainPath = util.join(ctx.cwd, "src/main.rey");
+    var backupPath = util.join(ctx.cwd, "src/main.rey.bak");
+
+    if util.exists(manifestPath) && !force {
+        output.error("capy.toml already exists; use --force to overwrite it");
+        return 1;
+    }
+    if util.exists(mainPath) && !force {
+        output.error("src/main.rey already exists; use --force to back it up and overwrite it");
+        return 1;
+    }
+
+    util.mkdirAll(util.join(ctx.cwd, "src"));
+    if util.exists(mainPath) {
+        if !util.isFile(mainPath) {
+            output.error("src/main.rey exists and is not a file");
+            return 1;
+        }
+        util.copy(mainPath, backupPath);
+        output.info("Backed up src/main.rey to src/main.rey.bak");
+    }
+
+    var dependencies: HashMap<string, string> = HashMap.new();
+    manifest.write(manifestPath, name, "0.1.0", dependencies);
+    util.write(mainPath, "func main(): void {{\n    println(\"Hello from Capybara!\");\n}}\n");
+
+    var gitignorePath = util.join(ctx.cwd, ".gitignore");
+    if !util.exists(gitignorePath) {
+        util.write(gitignorePath, "build/\nvendor/\n.capy/\n*.tar.gz\n.DS_Store\n");
+    }
+
+    output.success("Initialized Capybara project " + name);
+    output.info("Next steps:");
+    output.plain("  capy run");
+    output.plain("  capy build");
+    return 0;
+}

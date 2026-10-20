@@ -1,0 +1,42 @@
+import std::cli;
+import capy::types::{Context, ExecResult};
+import capy::output;
+import capy::toolchain;
+import capy::commands::target::{Target, resolve, ctxToolchain};
+
+func printResult(result: ExecResult): void {
+    if result.stdout != "" {
+        output.plain(result.stdout);
+    }
+    if result.stderr != "" {
+        eprintln(result.stderr);
+    }
+}
+
+pub func execute(ctx: Context, args: Vec<string>): int {
+    var parsed = cli.parseArgs(args);
+    var positionals = cli.getPositionals(parsed);
+    if positionals.len() > 1 {
+        output.error("check accepts at most one file argument");
+        return 1;
+    }
+    var fileArg = "";
+    if positionals.len() == 1 {
+        fileArg = positionals[0];
+    }
+    var resolved: Target = resolve(ctx, fileArg);
+    if !resolved.ok {
+        output.error(resolved.error);
+        return 1;
+    }
+    var tc = ctxToolchain(ctx);
+    if !toolchain.require(tc) {
+        return 1;
+    }
+    var result = toolchain.check(tc, resolved.entry);
+    printResult(result);
+    if result.code == 0 {
+        output.plain("ok");
+    }
+    return result.code;
+}

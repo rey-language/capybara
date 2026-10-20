@@ -1,0 +1,22 @@
+{
+  "name": "@capybara/cli",
+  "version": "0.1.0",
+  "description": "The capy command line interface for the Rey language",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rey-language/capybara.git"
+  },
+  "bin": {
+    "capy": "bin/capy.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "optionalDependencies": {
+    "@capybara/darwin-arm64": "0.1.0",
+    "@capybara/darwin-x64": "0.1.0",
+    "@capybara/linux-x64": "0.1.0",
+    "@capybara/linux-arm64": "0.1.0"
+  }
+}

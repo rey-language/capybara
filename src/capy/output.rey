@@ -1,0 +1,27 @@
+import capy::types::{Context};
+
+pub func info(msg: string): void {
+    println("==> " + msg);
+}
+
+pub func success(msg: string): void {
+    println("✓ " + msg);
+}
+
+pub func warn(msg: string): void {
+    eprintln("warning: " + msg);
+}
+
+pub func error(msg: string): void {
+    eprintln("error: " + msg);
+}
+
+pub func plain(msg: string): void {
+    println(msg);
+}
+
+pub func verbose(ctx: Context, msg: string): void {
+    if ctx.verbose {
+        println(msg);
+    }
+}

@@ -1,0 +1,245 @@
+import std::toml;
+import capy::types::{Manifest, emptyManifest};
+import capy::util;
+
+func hexDigit(value: int): string {
+    if value < 10 {
+        return value.toString();
+    }
+    if value == 10 { return "a"; }
+    if value == 11 { return "b"; }
+    if value == 12 { return "c"; }
+    if value == 13 { return "d"; }
+    if value == 14 { return "e"; }
+    return "f";
+}
+
+func escapeString(value: string): string {
+    var result = "";
+    var i = 0;
+    loop {
+        if i >= value.len() { break; }
+        var c = value[i];
+        if c == '"' {
+            result = result + "\\\"";
+        } else if c == '\\' {
+            result = result + "\\\\";
+        } else if c == '\n' {
+            result = result + "\\n";
+        } else if c == '\r' {
+            result = result + "\\r";
+        } else if c == '\t' {
+            result = result + "\\t";
+        } else if int(c) < 32 || int(c) == 127 {
+            var code = int(c);
+            result = result + "\\u00" + hexDigit(code / 16) + hexDigit(code % 16);
+        } else {
+            result = result + c.toString();
+        }
+        i = i + 1;
+    }
+    return result;
+}
+
+func quote(value: string): string {
+    return "\"" + escapeString(value) + "\"";
+}
+
+func sortedKeys(values: Vec<string>): Vec<string> {
+    var remaining: HashMap<string, bool> = HashMap.new();
+    for value in values {
+        remaining.set(value, true);
+    }
+    var result: Vec<string> = Vec.new();
+    loop {
+        var keys = remaining.keys();
+        var found = false;
+        var smallest = "";
+        for key in keys {
+            if !found || key < smallest {
+                smallest = key;
+                found = true;
+            }
+        }
+        if !found { break; }
+        result.push(smallest);
+        remaining.delete(smallest);
+    }
+    return result;
+}
+
+func manifestText(name: string, version: string, deps: HashMap<string, string>): string {
+    var content = "[package]\n";
+    content = content + "name = " + quote(name) + "\n";
+    content = content + "version = " + quote(version) + "\n";
+    content = content + "entry = \"src/main.rey\"\n\n[dependencies]\n";
+    var keys = sortedKeys(deps.keys());
+    for key in keys {
+        content = content + key + " = " + quote(deps.get(key)) + "\n";
+    }
+    return content;
+}
+
+pub func load(path: string): Manifest {
+    var missing = emptyManifest();
+    if !util.isFile(path) {
+        missing.error = "manifest not found: " + path;
+        return missing;
+    }
+    var table = toml.parse(util.read(path));
+    var root = util.dirname(path);
+    var name = toml.getString(table, "package.name", "");
+    if name == "" {
+        name = util.basename(root);
+    }
+    var result = emptyManifest();
+    result.found = true;
+    result.path = path;
+    result.root = root;
+    result.name = name;
+    result.version = toml.getString(table, "package.version", "0.1.0");
+    result.entry = toml.getString(table, "package.entry", "src/main.rey");
+    var keys = table.keys();
+    for key in keys {
+        if util.startsWith(key, "dependencies.") {
+            var dependency = key.slice("dependencies.".len(), key.len());
+            result.dependencies.set(dependency, toml.getString(table, key, ""));
+        }
+    }
+    return result;
+}
+
+pub func loadAt(root: string): Manifest {
+    return load(util.join(root, "capy.toml"));
+}
+
+pub func write(path: string, name: string, version: string, deps: HashMap<string, string>): void {
+    util.write(path, manifestText(name, version, deps));
+}
+
+pub func addDependency(m: Manifest, name: string, spec: string): Manifest {
+    m.dependencies.set(name, spec);
+    return m;
+}
+
+pub func removeDependency(m: Manifest, name: string): Manifest {
+    m.dependencies.delete(name);
+    return m;
+}
+
+pub func defaultToml(name: string): string {
+    var dependencies: HashMap<string, string> = HashMap.new();
+    return manifestText(name, "0.1.0", dependencies);
+}
+
+pub func lockLoad(root: string): HashMap<string, string> {
+    var result: HashMap<string, string> = HashMap.new();
+    var path = util.join(root, "capy.lock");
+    if !util.isFile(path) {
+        return result;
+    }
+    var table = toml.parse(util.read(path));
+    var keys = table.keys();
+    for key in keys {
+        result.set(key, toml.getString(table, key, ""));
+    }
+    return result;
+}
+
+pub func lockWrite(root: string, m: Manifest, versions: HashMap<string, string>, commits: HashMap<string, string>): void {
+    var content = "";
+    var names = sortedKeys(m.dependencies.keys());
+    var i = 0;
+    for name in names {
+        if i > 0 { content = content + "\n"; }
+        var version = m.dependencies.get(name);
+        if versions.has(name) {
+            version = versions.get(name);
+        }
+        var commit = "";
+        if commits.has(name) {
+            commit = commits.get(name);
+        }
+        content = content + "[" + name + "]\n";
+        content = content + "version = " + quote(version) + "\n";
+        content = content + "commit = " + quote(commit) + "\n";
+        content = content + "source = \"rey-language/packages\"\n";
+        i = i + 1;
+    }
+    util.write(util.join(root, "capy.lock"), content);
+}
+
+func packageFromLockKey(key: string): string {
+    if key.endsWith(".version") {
+        return key.slice(0, key.len() - 8);
+    }
+    if key.endsWith(".commit") || key.endsWith(".source") {
+        return key.slice(0, key.len() - 7);
+    }
+    return "";
+}
+
+func packageNamesFromLock(lock: HashMap<string, string>): Vec<string> {
+    var names: Vec<string> = Vec.new();
+    var keys = lock.keys();
+    for key in keys {
+        var name = packageFromLockKey(key);
+        if name != "" && !names.contains(name) {
+            names.push(name);
+        }
+    }
+    return sortedKeys(names);
+}
+
+func packageOwner(key: string, names: Vec<string>): string {
+    var owner = "";
+    for name in names {
+        if util.startsWith(key, name + ".") && name.len() > owner.len() {
+            owner = name;
+        }
+    }
+    return owner;
+}
+
+func lockText(lock: HashMap<string, string>): string {
+    var content = "";
+    var names = packageNamesFromLock(lock);
+    var keys = sortedKeys(lock.keys());
+    var i = 0;
+    for name in names {
+        if i > 0 { content = content + "\n"; }
+        content = content + "[" + name + "]\n";
+        var versionKey = name + ".version";
+        var commitKey = name + ".commit";
+        var sourceKey = name + ".source";
+        if lock.has(versionKey) {
+            content = content + "version = " + quote(lock.get(versionKey)) + "\n";
+        }
+        if lock.has(commitKey) {
+            content = content + "commit = " + quote(lock.get(commitKey)) + "\n";
+        }
+        if lock.has(sourceKey) {
+            content = content + "source = " + quote(lock.get(sourceKey)) + "\n";
+        }
+        for key in keys {
+            if packageOwner(key, names) == name && key != versionKey && key != commitKey && key != sourceKey {
+                var property = key.slice(name.len() + 1, key.len());
+                content = content + property + " = " + quote(lock.get(key)) + "\n";
+            }
+        }
+        i = i + 1;
+    }
+    return content;
+}
+
+pub func lockRemove(root: string, name: string): void {
+    var lock = lockLoad(root);
+    var names = packageNamesFromLock(lock);
+    var keys = lock.keys();
+    for key in keys {
+        if packageOwner(key, names) == name {
+            lock.delete(key);
+        }
+    }
+    util.write(util.join(root, "capy.lock"), lockText(lock));
+}

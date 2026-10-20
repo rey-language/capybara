@@ -1,0 +1,345 @@
+import std::toml;
+import capy::types::{Context};
+import capy::util;
+import capy::output;
+import capy::version;
+
+func args1(value: string): Vec<string> {
+    var args: Vec<string> = Vec.new();
+    args.push(value);
+    return args;
+}
+
+func args2(first: string, second: string): Vec<string> {
+    var args: Vec<string> = Vec.new();
+    args.push(first);
+    args.push(second);
+    return args;
+}
+
+func fetchUpdateManifest(): HashMap<string, string> {
+    var args: Vec<string> = Vec.new();
+    args.push("-fsSL");
+    args.push("--max-time");
+    args.push("4");
+    args.push(version.updateManifestUrl());
+    var result = util.runArgs("curl", args);
+    if result.code != 0 {
+        return HashMap.new();
+    }
+    return toml.parse(result.stdout);
+}
+
+func versionPart(parts: Vec<string>, index: int): int {
+    if index >= parts.len() { return 0; }
+    return parts[index].toInt();
+}
+
+func isNewer(latest: string, current: string): bool {
+    var latestParts = latest.split(".");
+    var currentParts = current.split(".");
+    var i = 0;
+    loop {
+        if i >= 3 { break; }
+        var latestPart = versionPart(latestParts, i);
+        var currentPart = versionPart(currentParts, i);
+        if latestPart > currentPart { return true; }
+        if latestPart < currentPart { return false; }
+        i = i + 1;
+    }
+    return false;
+}
+
+pub func target(): string {
+    var systemResult = util.runArgs("uname", args1("-s"));
+    var machineResult = util.runArgs("uname", args1("-m"));
+    if systemResult.code != 0 || machineResult.code != 0 {
+        return "";
+    }
+    var system = systemResult.stdout.trim();
+    var machine = machineResult.stdout.trim();
+    if system == "Darwin" && (machine == "arm64" || machine == "aarch64") {
+        return "darwin-arm64";
+    }
+    if system == "Darwin" && machine == "x86_64" {
+        return "darwin-x86_64";
+    }
+    if system == "Linux" && machine == "x86_64" {
+        return "linux-x86_64";
+    }
+    if system == "Linux" && (machine == "aarch64" || machine == "arm64") {
+        return "linux-aarch64";
+    }
+    return "";
+}
+
+pub func check(ctx: Context): int {
+    var table = fetchUpdateManifest();
+    if !table.has("version") {
+        output.error("could not check for capy updates");
+        return 1;
+    }
+    var latest = toml.getString(table, "version", "");
+    if latest == "" {
+        output.error("update manifest has no latest version");
+        return 1;
+    }
+    var current = version.capyVersion();
+    output.plain("Current version: " + current);
+    output.plain("Latest version: " + latest);
+    if isNewer(latest, current) {
+        return 2;
+    }
+    return 0;
+}
+
+func checksumMatches(archive: string, expected: string): bool {
+    var shasumArgs: Vec<string> = Vec.new();
+    shasumArgs.push("-a");
+    shasumArgs.push("256");
+    shasumArgs.push(archive);
+    var result = util.runArgs("shasum", shasumArgs);
+    if result.code != 0 {
+        result = util.runArgs("sha256sum", args1(archive));
+    }
+    if result.code != 0 {
+        output.error("neither shasum nor sha256sum could verify the update");
+        return false;
+    }
+    var fields = util.splitOnce(result.stdout.trim(), " ");
+    if fields[0] != expected {
+        output.error("capy update checksum did not match");
+        return false;
+    }
+    return true;
+}
+
+func installToolchain(ctx: Context, releaseRoot: string, latest: string): bool {
+    var source = util.join(util.join(releaseRoot, "libexec"), "toolchain");
+    if !util.isDir(source) {
+        return true;
+    }
+    var toolchains = util.join(ctx.capyHome, "toolchains");
+    var destination = util.join(toolchains, latest);
+    var staging = util.join(toolchains, latest + ".new");
+    util.mkdirAll(toolchains);
+    util.removeAll(staging);
+    util.copyDir(source, staging);
+    var executableNames: Vec<string> = Vec.new();
+    executableNames.push("rey");
+    executableNames.push("rey.bin");
+    executableNames.push("rey-v0");
+    for name in executableNames {
+        var executable = util.join(util.join(staging, "bin"), name);
+        if util.isFile(executable) {
+            var chmodArgs: Vec<string> = Vec.new();
+            chmodArgs.push("755");
+            chmodArgs.push(executable);
+            var chmodded = util.runArgs("chmod", chmodArgs);
+            if chmodded.code != 0 {
+                util.removeAll(staging);
+                output.error("could not make the bundled " + name + " executable");
+                return false;
+            }
+        }
+    }
+    var reyBinary = util.join(util.join(staging, "bin"), "rey");
+    var runtimeArchive = util.join(util.join(util.join(staging, "bin"), "runtime"), "librey_rt.a");
+    var stdSource = util.join(util.join(staging, "std"), "src");
+    if !util.isFile(reyBinary) || !util.isFile(runtimeArchive) || !util.isDir(stdSource) {
+        util.removeAll(staging);
+        output.error("release archive contains an invalid toolchain");
+        return false;
+    }
+    util.removeAll(destination);
+    var moved = util.runArgs("mv", args2(staging, destination));
+    if moved.code != 0 {
+        output.error("could not install the bundled toolchain: " + moved.stderr.trim());
+        return false;
+    }
+    var current = util.join(toolchains, "current");
+    var linkArgs: Vec<string> = Vec.new();
+    linkArgs.push("-sfn");
+    linkArgs.push(destination);
+    linkArgs.push(current);
+    var linked = util.runArgs("ln", linkArgs);
+    if linked.code != 0 {
+        output.error("could not select the new toolchain: " + linked.stderr.trim());
+        return false;
+    }
+    var libexec = util.join(ctx.capyHome, "libexec");
+    if util.isDir(libexec) {
+        var bundled = util.join(libexec, "toolchain");
+        util.removeAll(bundled);
+        var bundledArgs: Vec<string> = Vec.new();
+        bundledArgs.push("-sfn");
+        bundledArgs.push(destination);
+        bundledArgs.push(bundled);
+        var bundledLinked = util.runArgs("ln", bundledArgs);
+        if bundledLinked.code != 0 {
+            output.error("could not update the bundled toolchain link: " + bundledLinked.stderr.trim());
+            return false;
+        }
+    }
+    var reycDir = util.join(ctx.home, ".reyc");
+    if util.isDir(reycDir) {
+        var stdLink = util.join(reycDir, "std");
+        util.removeAll(stdLink);
+        var stdArgs: Vec<string> = Vec.new();
+        stdArgs.push("-sfn");
+        stdArgs.push(util.join(destination, "std"));
+        stdArgs.push(stdLink);
+        var stdLinked = util.runArgs("ln", stdArgs);
+        if stdLinked.code != 0 {
+            output.error("could not update the standard library link: " + stdLinked.stderr.trim());
+            return false;
+        }
+    }
+    return true;
+}
+
+func replaceBinary(ctx: Context, source: string, latest: string): bool {
+    if ctx.exePath == "" {
+        output.error("could not locate the current capy binary");
+        return false;
+    }
+    var temporary = util.join(util.dirname(ctx.exePath), ".capy-update-" + latest);
+    util.removeAll(temporary);
+    util.copy(source, temporary);
+    if !util.isFile(temporary) {
+        output.error("could not copy the updated capy binary");
+        return false;
+    }
+    var chmod = util.runArgs("chmod", args2("755", temporary));
+    if chmod.code != 0 {
+        output.error("could not prepare the updated capy binary");
+        return false;
+    }
+    var mvArgs: Vec<string> = Vec.new();
+    mvArgs.push(temporary);
+    mvArgs.push(ctx.exePath);
+    var moved = util.runArgs("mv", mvArgs);
+    if moved.code != 0 {
+        output.error("could not replace the capy binary: " + moved.stderr.trim());
+        return false;
+    }
+    return true;
+}
+
+func downloadRelease(ctx: Context, table: HashMap<string, string>, latest: string, releaseTarget: string): string {
+    var url = toml.getString(table, releaseTarget, "");
+    var expected = toml.getString(table, releaseTarget + "-sha256", "");
+    if url == "" || expected == "" {
+        output.error("update manifest is missing the release for " + releaseTarget);
+        return "";
+    }
+    var cache = util.join(ctx.capyHome, "cache");
+    util.mkdirAll(cache);
+    var archive = util.join(cache, "capy-v" + latest + "-" + releaseTarget + ".tar.gz");
+    var downloadArgs: Vec<string> = Vec.new();
+    downloadArgs.push("-fsSL");
+    downloadArgs.push("--max-time");
+    downloadArgs.push("300");
+    downloadArgs.push(url);
+    downloadArgs.push("-o");
+    downloadArgs.push(archive);
+    var downloaded = util.runArgs("curl", downloadArgs);
+    if downloaded.code != 0 {
+        output.error("could not download capy update: " + downloaded.stderr.trim());
+        return "";
+    }
+    if !checksumMatches(archive, expected) {
+        return "";
+    }
+    var extractDir = util.join(cache, "capy-update-" + latest + "-" + releaseTarget);
+    util.removeAll(extractDir);
+    util.mkdirAll(extractDir);
+    var extractArgs: Vec<string> = Vec.new();
+    extractArgs.push("-xzf");
+    extractArgs.push(archive);
+    extractArgs.push("-C");
+    extractArgs.push(extractDir);
+    var extracted = util.runArgs("tar", extractArgs);
+    if extracted.code != 0 {
+        output.error("could not extract capy update: " + extracted.stderr.trim());
+        return "";
+    }
+    return util.join(extractDir, "capy-v" + latest + "-" + releaseTarget);
+}
+
+pub func perform(ctx: Context): int {
+    if util.contains(ctx.exePath, "/Cellar/") || util.contains(ctx.exePath, "/homebrew/") {
+        output.info("Update Capy with: brew upgrade capy");
+        return 1;
+    }
+    if util.contains(ctx.exePath, "node_modules") {
+        output.info("Update Capy with: npm i -g @capybara/cli@latest");
+        return 1;
+    }
+    if ctx.exePath == "" {
+        output.error("could not locate the current capy binary");
+        return 1;
+    }
+    var table = fetchUpdateManifest();
+    if !table.has("version") {
+        output.error("could not fetch the capy update manifest");
+        return 1;
+    }
+    var latest = toml.getString(table, "version", "");
+    if latest == "" {
+        output.error("update manifest has no latest version");
+        return 1;
+    }
+    var current = version.capyVersion();
+    if !isNewer(latest, current) {
+        output.info("Capy is up to date (" + current + ")");
+        return 0;
+    }
+    var releaseTarget = target();
+    if releaseTarget == "" {
+        output.error("self-update is not supported on this platform");
+        return 1;
+    }
+    var releaseRoot = downloadRelease(ctx, table, latest, releaseTarget);
+    if releaseRoot == "" {
+        return 1;
+    }
+    var binary = util.join(util.join(releaseRoot, "bin"), "capy");
+    if !util.isFile(binary) {
+        output.error("release archive does not contain bin/capy");
+        return 1;
+    }
+    if !installToolchain(ctx, releaseRoot, latest) {
+        return 1;
+    }
+    if !replaceBinary(ctx, binary, latest) {
+        return 1;
+    }
+    output.success("Updated Capy to " + latest);
+    return 0;
+}
+
+pub func maybeNotify(ctx: Context): void {
+    if util.envOr("CAPY_UPDATE_CHECK", "") != "1" {
+        return;
+    }
+    var cachePath = util.join(util.join(ctx.capyHome, "cache"), "update-check");
+    var now = util.nowSeconds();
+    if util.isFile(cachePath) {
+        var last = util.read(cachePath).trim().toInt();
+        if last > 0 && now >= last && now - last < 86400 {
+            return;
+        }
+    }
+    var table = fetchUpdateManifest();
+    if table.has("version") {
+        var latest = toml.getString(table, "version", "");
+        if isNewer(latest, version.capyVersion()) {
+            output.info("Capy " + latest + " is available; run capy update --self");
+        }
+    }
+    if now > 0 {
+        util.mkdirAll(util.dirname(cachePath));
+        util.write(cachePath, now.toString());
+    }
+}

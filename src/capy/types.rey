@@ -1,0 +1,93 @@
+pub struct ExecResult {
+    pub code: int,
+    pub stdout: string,
+    pub stderr: string,
+}
+
+pub struct Toolchain {
+    pub found: bool,
+    pub root: string,
+    pub rey: string,
+    pub runtime: string,
+    pub std: string,
+    pub version: string,
+    pub error: string,
+}
+
+pub struct Manifest {
+    pub found: bool,
+    pub path: string,
+    pub root: string,
+    pub name: string,
+    pub version: string,
+    pub entry: string,
+    pub error: string,
+    pub dependencies: HashMap<string, string>,
+}
+
+pub struct Context {
+    pub cwd: string,
+    pub home: string,
+    pub capyHome: string,
+    pub exePath: string,
+    pub exeDir: string,
+    pub verbose: bool,
+    pub tcFound: bool,
+    pub tcRoot: string,
+    pub tcRey: string,
+    pub tcRuntime: string,
+    pub tcStd: string,
+    pub tcVersion: string,
+    pub tcError: string,
+}
+
+pub func emptyExec(): ExecResult {
+    return ExecResult {
+        code: 0,
+        stdout: "",
+        stderr: "",
+    };
+}
+
+pub func emptyManifest(): Manifest {
+    return Manifest {
+        found: false,
+        path: "",
+        root: "",
+        name: "",
+        version: "",
+        entry: "",
+        error: "",
+        dependencies: HashMap.new(),
+    };
+}
+
+pub func emptyToolchain(): Toolchain {
+    return Toolchain {
+        found: false,
+        root: "",
+        rey: "",
+        runtime: "",
+        std: "",
+        version: "",
+        error: "",
+    };
+}
+
+pub func emptyContext(): Context {
+    return Context {
+        cwd: "",
+        home: "",
+        capyHome: "",
+        exePath: "",
+        exeDir: "",
+        verbose: false,
+        tcFound: false,
+        tcRoot: "",
+        tcRey: "",
+        tcRuntime: "",
+        tcStd: "",
+        tcVersion: "",
+        tcError: "",
+    };
+}

@@ -1,0 +1,66 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            target: darwin-arm64
+          - runner: macos-15-intel
+            target: darwin-x86_64
+          - runner: ubuntu-22.04
+            target: linux-x86_64
+          - runner: ubuntu-22.04-arm
+            target: linux-aarch64
+    runs-on: ${{ matrix.runner }}
+    env:
+      CAPY_VERSION: 0.1.0
+      CAPY_TARGET: ${{ matrix.target }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Fetch pinned Rey toolchain
+        run: bash scripts/fetch-toolchain.sh
+      - name: Build capy
+        run: bash scripts/build.sh
+      - name: Smoke test
+        run: |
+          ./build/capy --version
+          smoke_dir="$(mktemp -d)"
+          cd "$smoke_dir"
+          "$GITHUB_WORKSPACE/build/capy" init --name smoke
+          "$GITHUB_WORKSPACE/build/capy" run
+      - name: Package release archive
+        run: bash scripts/package.sh "$CAPY_TARGET"
+      - name: Test installer
+        run: |
+          install_home="$(mktemp -d)"
+          HOME="$install_home" \
+            CAPY_ARCHIVE="$PWD/build/dist/capy-v0.1.0-$CAPY_TARGET.tar.gz" \
+            CAPY_SKIP_DEPS=1 \
+            CAPY_SKIP_PROFILE=1 \
+            bash install.sh
+          HOME="$install_home" PATH="$install_home/.capy/bin:$PATH" capy --version
+          HOME="$install_home" PATH="$install_home/.capy/bin:$PATH" rey --version
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: capy-ci-${{ matrix.target }}
+          path: |
+            build/dist/*.tar.gz
+            build/dist/*.sha256
+          if-no-files-found: error
+          retention-days: 7

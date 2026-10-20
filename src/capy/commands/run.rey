@@ -1,0 +1,84 @@
+import std::cli;
+import capy::types::{Context, ExecResult};
+import capy::util;
+import capy::output;
+import capy::toolchain;
+import capy::project;
+import capy::commands::target::{Target, resolve, ctxToolchain};
+
+func printResult(result: ExecResult): void {
+    if result.stdout != "" {
+        output.plain(result.stdout);
+    }
+    if result.stderr != "" {
+        eprintln(result.stderr);
+    }
+}
+
+func normalizeRunArgs(args: Vec<string>): Vec<string> {
+    var result: Vec<string> = Vec.new();
+    var releaseCount = 0;
+    for arg in args {
+        if arg == "--release" {
+            releaseCount = releaseCount + 1;
+        } else {
+            result.push(arg);
+        }
+    }
+    var i = 0;
+    loop {
+        if i >= releaseCount {
+            break;
+        }
+        result.push("--release");
+        i = i + 1;
+    }
+    return result;
+}
+
+pub func execute(ctx: Context, args: Vec<string>): int {
+    var split = util.splitAtDoubleDash(args);
+    var before = split[0];
+    var programArgs = split[1];
+    var parsed = cli.parseArgs(normalizeRunArgs(before));
+    if cli.hasFlag(parsed, "release") {
+        output.warn("the bundled compiler always optimizes; release and target flags are not supported in this beta");
+    }
+
+    var positionals = cli.getPositionals(parsed);
+    if positionals.len() > 1 {
+        output.error("run accepts only one file argument before --");
+        return 1;
+    }
+    var fileArg = "";
+    if positionals.len() > 0 && positionals[0].endsWith(".rey") {
+        fileArg = positionals[0];
+    }
+    var resolved: Target = resolve(ctx, fileArg);
+    if !resolved.ok {
+        output.error(resolved.error);
+        return 1;
+    }
+    var tc = ctxToolchain(ctx);
+    if !toolchain.require(tc) {
+        return 1;
+    }
+
+    if fileArg != "" {
+        var script = toolchain.runScript(tc, resolved.entry, programArgs);
+        printResult(script);
+        return script.code;
+    }
+
+    var buildDir = project.buildDir(resolved.root);
+    util.mkdirAll(buildDir);
+    var outputPath = util.absolute(project.buildPath(resolved.root, resolved.name), ctx.cwd);
+    var built = toolchain.build(tc, resolved.entry, outputPath);
+    printResult(built);
+    if built.code != 0 {
+        return built.code;
+    }
+    var child = util.runArgsIn(outputPath, programArgs, resolved.root);
+    printResult(child);
+    return child.code;
+}

@@ -1,0 +1,125 @@
+// Process helpers for the native Rey compiler.
+//
+// The native compiler provides exec(), args() and exit() directly. It does not
+// provide the interpreter's nativeProcess surface, so this module keeps the
+// public API and implements it on top of exec(). The shell is POSIX, which is
+// already a requirement for clang and the Rey runtime.
+
+pub struct ExecDetail {
+    pub code: int,
+    pub stdout: string,
+    pub stderr: string,
+}
+
+func shellQuote(s: string): string {
+    var out = "'";
+    var i = 0;
+    loop {
+        if i >= s.len() { break; }
+        if s[i] == '\'' {
+            out = out + "'\\''";
+        } else {
+            out = out + s[i].toString();
+        }
+        i = i + 1;
+    }
+    return out + "'";
+}
+
+pub func runDetailed(cmd: string): ExecDetail {
+    var tmpResult = exec("mktemp -d");
+    if tmpResult.isErr() {
+        return ExecDetail { code: 1, stdout: "", stderr: "mktemp failed" };
+    }
+    var tmp = tmpResult.unwrap().trim();
+    if tmp.len() == 0 {
+        return ExecDetail { code: 1, stdout: "", stderr: "mktemp returned an empty path" };
+    }
+    var outPath = tmp + "/out";
+    var errPath = tmp + "/err";
+    var wrapped = "(" + cmd + ") >" + shellQuote(outPath) + " 2>" + shellQuote(errPath) + "; echo $?";
+    var codeResult = exec(wrapped);
+    var code = 1;
+    if codeResult.isOk() {
+        code = codeResult.unwrap().trim().toInt();
+    }
+    var out = "";
+    if fileExists(outPath) {
+        out = readFile(outPath);
+    }
+    var err = "";
+    if fileExists(errPath) {
+        err = readFile(errPath);
+    }
+    exec("rm -rf " + shellQuote(tmp));
+    return ExecDetail { code: code, stdout: out, stderr: err };
+}
+
+pub func run(cmd: string): Result<string, string> {
+    return exec(cmd);
+}
+
+pub func cwd(): string {
+    // -P resolves the physical case/symlinks; the compiler treats module path
+    // components as case-sensitive even on case-insensitive filesystems.
+    // Use the external binary: the shell builtin returns $PWD unchanged.
+    var result = exec("/bin/pwd -P");
+    if result.isOk() {
+        return result.unwrap().trim();
+    }
+    return "";
+}
+
+pub func chdir(path: string): void {
+    // A child shell cannot change the parent process directory. Callers that
+    // need a working directory should use runIn() below.
+    exec("cd " + shellQuote(path));
+}
+
+pub func runIn(program: string, args: Vec<string>, cwd: string): ExecDetail {
+    var cmd = "cd " + shellQuote(cwd) + " && " + shellQuote(program);
+    for arg in args {
+        cmd = cmd + " " + shellQuote(arg);
+    }
+    return runDetailed(cmd);
+}
+
+pub func tempDir(): string {
+    var result = exec("mktemp -d");
+    if result.isOk() {
+        return result.unwrap().trim();
+    }
+    return "";
+}
+
+pub func sleepMs(ms: int): void {
+    var seconds = ms / 1000;
+    if seconds < 1 {
+        seconds = 1;
+    }
+    exec("sleep " + seconds.toString());
+}
+
+pub func which(name: string): string {
+    var result = exec("command -v " + shellQuote(name));
+    if result.isOk() {
+        return result.unwrap().trim();
+    }
+    return "";
+}
+
+pub func isWindows(): bool {
+    return false;
+}
+
+pub func isMac(): bool {
+    var result = exec("uname -s");
+    if result.isErr() { return false; }
+    return result.unwrap().trim() == "Darwin";
+}
+
+pub func isLinux(): bool {
+    var result = exec("uname -s");
+    if result.isErr() { return false; }
+    return result.unwrap().trim() == "Linux";
+}

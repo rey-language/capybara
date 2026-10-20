@@ -1,0 +1,237 @@
+// Filesystem helpers for the native Rey compiler.
+//
+// The 0.3.0 native compiler exposes a small set of builtins (readFile,
+// writeFile, appendFile, fileExists, deleteFile, listDir, exec). The upstream
+// std targets the interpreter's larger native-* surface, so this module keeps
+// the same public API and implements the missing pieces with those builtins
+// plus the POSIX shell that Rey already requires.
+
+func shellQuote(s: string): string {
+    var out = "'";
+    var i = 0;
+    loop {
+        if i >= s.len() { break; }
+        if s[i] == '\'' {
+            out = out + "'\\''";
+        } else {
+            out = out + s[i].toString();
+        }
+        i = i + 1;
+    }
+    return out + "'";
+}
+
+func runQuiet(cmd: string): bool {
+    var result = exec(cmd);
+    return result.isOk();
+}
+
+func testPath(flag: string, path: string): bool {
+    var cmd = "test " + flag + " " + shellQuote(path);
+    return runQuiet(cmd);
+}
+
+pub func read(path: string): string {
+    return readFile(path);
+}
+
+pub func write(path: string, content: string): void {
+    writeFile(path, content);
+}
+
+pub func append(path: string, content: string): void {
+    appendFile(path, content);
+}
+
+pub func exists(path: string): bool {
+    return fileExists(path);
+}
+
+pub func remove(path: string): void {
+    if fileExists(path) {
+        deleteFile(path);
+    }
+}
+
+pub func mkdir(path: string): void {
+    exec("mkdir -p " + shellQuote(path));
+}
+
+pub func mkdirAll(path: string): void {
+    exec("mkdir -p " + shellQuote(path));
+}
+
+pub func removeDir(path: string): void {
+    exec("rmdir " + shellQuote(path));
+}
+
+pub func removeDirAll(path: string): void {
+    exec("rm -rf " + shellQuote(path));
+}
+
+pub func isFile(path: string): bool {
+    return testPath("-f", path);
+}
+
+pub func isDir(path: string): bool {
+    return testPath("-d", path);
+}
+
+pub func list(path: string): Vec<string> {
+    if !fileExists(path) {
+        return Vec.new();
+    }
+    return listDir(path);
+}
+
+pub func listPaths(path: string): Vec<string> {
+    var names = list(path);
+    var out: Vec<string> = Vec.new();
+    for name in names {
+        out.push(join(path, name));
+    }
+    return out;
+}
+
+pub func join(a: string, b: string): string {
+    if a.len() == 0 { return b; }
+    if b.len() == 0 { return a; }
+    if b.startsWith("/") { return b; }
+    if a.endsWith("/") { return a + b; }
+    return a + "/" + b;
+}
+
+pub func basename(path: string): string {
+    if path.len() == 0 { return ""; }
+    var end = path.len();
+    loop {
+        if end > 0 && path[end - 1] == '/' {
+            end = end - 1;
+        } else {
+            break;
+        }
+    }
+    if end == 0 { return "/"; }
+    var start = end - 1;
+    loop {
+        if start >= 0 && path[start] != '/' {
+            start = start - 1;
+        } else {
+            break;
+        }
+    }
+    return path.slice(start + 1, end);
+}
+
+pub func dirname(path: string): string {
+    if path.len() == 0 { return "."; }
+    var end = path.len();
+    loop {
+        if end > 1 && path[end - 1] == '/' {
+            end = end - 1;
+        } else {
+            break;
+        }
+    }
+    var i = end - 1;
+    loop {
+        if i >= 0 && path[i] != '/' {
+            i = i - 1;
+        } else {
+            break;
+        }
+    }
+    if i < 0 { return "."; }
+    if i == 0 { return "/"; }
+    return path.slice(0, i);
+}
+
+pub func extname(path: string): string {
+    var i = path.len() - 1;
+    var dot = -1;
+    loop {
+        if i < 0 { break; }
+        if path[i] == '/' { break; }
+        if path[i] == '.' {
+            dot = i;
+            break;
+        }
+        i = i - 1;
+    }
+    if dot < 0 { return ""; }
+    return path.slice(dot, path.len());
+}
+
+pub func copy(src: string, dst: string): void {
+    if isDir(src) {
+        exec("cp -R " + shellQuote(src) + " " + shellQuote(dst));
+        return;
+    }
+    writeFile(dst, readFile(src));
+}
+
+pub func move(src: string, dst: string): void {
+    exec("mv " + shellQuote(src) + " " + shellQuote(dst));
+}
+
+pub func touch(path: string): void {
+    if !fileExists(path) {
+        writeFile(path, "");
+    }
+}
+
+pub func readLines(path: string): Vec<string> {
+    var text = readFile(path);
+    if text.len() == 0 {
+        return Vec.new();
+    }
+    var lines = text.split("\n");
+    if lines.len() > 0 && lines[lines.len() - 1] == "" {
+        lines.pop();
+    }
+    return lines;
+}
+
+pub func writeLines(path: string, lines: Vec<string>): void {
+    var out = "";
+    for line in lines {
+        out = out + line + "\n";
+    }
+    writeFile(path, out);
+}
+
+pub func ensureDir(path: string): void {
+    mkdirAll(path);
+}
+
+pub func cleanPath(path: string): string {
+    if path.len() == 0 { return "."; }
+    var absolute = path.startsWith("/");
+    var parts: Vec<string> = Vec.new();
+    var segments = path.split("/");
+    for segment in segments {
+        if segment.len() == 0 || segment == "." {
+            continue;
+        }
+        if segment == ".." {
+            if parts.len() > 0 {
+                parts.pop();
+            } else if !absolute {
+                parts.push("..");
+            }
+        } else {
+            parts.push(segment);
+        }
+    }
+    var out = "";
+    if absolute { out = "/"; }
+    var i = 0;
+    loop {
+        if i >= parts.len() { break; }
+        if i > 0 { out = out + "/"; }
+        out = out + parts[i];
+        i = i + 1;
+    }
+    if out.len() == 0 { return "."; }
+    return out;
+}

@@ -1,0 +1,171 @@
+import std::env;
+import std::process;
+import capy::types::{Context, ExecResult, Toolchain, emptyContext, emptyToolchain};
+import capy::util;
+import capy::output;
+import capy::version::{reyVersion};
+
+func versionFor(reyPath: string): string {
+    var args: Vec<string> = Vec.new();
+    args.push("--version");
+    var result = util.runArgs(reyPath, args);
+    if result.code != 0 {
+        return reyVersion();
+    }
+    var line = result.stdout.trim();
+    if line.startsWith("rey ") {
+        return line.slice(4, line.len());
+    }
+    return line;
+}
+
+func fromRoot(rootPath: string, stdPath: string, ctx: Context): Toolchain {
+    var root = util.absolute(rootPath, ctx.cwd);
+    var reyPath = util.join(root, "bin/rey");
+    var runtimePath = util.join(root, "bin/runtime");
+    var std = stdPath;
+    if std == "" {
+        std = util.join(root, "std/src");
+    }
+    if !util.isFile(reyPath) || !util.isFile(util.join(runtimePath, "librey_rt.a")) || !util.isDir(std) {
+        return emptyToolchain();
+    }
+    var tc = Toolchain {
+        found: true,
+        root: root,
+        rey: util.absolute(reyPath, ctx.cwd),
+        runtime: util.absolute(runtimePath, ctx.cwd),
+        std: util.absolute(std, ctx.cwd),
+        version: "",
+        error: "",
+    };
+    setEnvFor(tc, ctx);
+    tc.version = versionFor(tc.rey);
+    return tc;
+}
+
+func resolvedBinary(path: string, ctx: Context): string {
+    var current = util.absolute(path, ctx.cwd);
+    var count = 0;
+    loop {
+        if count >= 8 {
+            break;
+        }
+        var args: Vec<string> = Vec.new();
+        args.push(current);
+        var link = util.runArgs("readlink", args);
+        if link.code != 0 || link.stdout.trim() == "" {
+            break;
+        }
+        var target = link.stdout.trim();
+        if !util.isAbsolute(target) {
+            target = util.join(util.dirname(current), target);
+        }
+        current = util.absolute(target, ctx.cwd);
+        count = count + 1;
+    }
+    return current;
+}
+
+func fromPath(path: string, ctx: Context): Toolchain {
+    var binary = resolvedBinary(path, ctx);
+    var root = util.dirname(util.dirname(binary));
+    var std = util.envOr("REY_STD_PATH", "");
+    if std == "" || !util.isDir(std) {
+        std = util.join(ctx.home, ".reyc/std/src");
+    }
+    return fromRoot(root, std, ctx);
+}
+
+pub func resolve(ctx: Context): Toolchain {
+    var candidates: Vec<string> = Vec.new();
+    var configured = util.envOr("CAPY_TOOLCHAIN", "");
+    if configured != "" {
+        candidates.push(configured);
+    }
+    candidates.push(util.join(ctx.exeDir, "../libexec/toolchain"));
+    candidates.push(util.join(ctx.exeDir, "../vendor/toolchain"));
+    candidates.push(util.join(ctx.exeDir, "toolchain"));
+    candidates.push(util.join(ctx.capyHome, "toolchains/current"));
+    candidates.push(util.join(ctx.capyHome, "toolchains/" + reyVersion()));
+    for path in candidates {
+        var tc = fromRoot(path, "", ctx);
+        if tc.found {
+            return tc;
+        }
+    }
+    var rey = process.which("rey");
+    if rey.len() > 0 {
+        var tc = fromPath(rey, ctx);
+        if tc.found {
+            return tc;
+        }
+    }
+    var missing = emptyToolchain();
+    missing.error = "No usable Rey toolchain was found. Install the bundled toolchain or set CAPY_TOOLCHAIN to a directory containing bin/rey, bin/runtime/librey_rt.a, and std/src.";
+    return missing;
+}
+
+pub func require(tc: Toolchain): bool {
+    if tc.found {
+        return true;
+    }
+    if tc.error != "" {
+        output.error(tc.error);
+    } else {
+        output.error("No usable Rey toolchain was found. Set CAPY_TOOLCHAIN to a valid toolchain directory.");
+    }
+    return false;
+}
+
+pub func version(tc: Toolchain): string {
+    if tc.version != "" {
+        return tc.version;
+    }
+    return reyVersion();
+}
+
+pub func setEnvFor(tc: Toolchain, ctx: Context): void {
+    env.set("REY_HOME", tc.root);
+    env.set("REY_STD_PATH", tc.std);
+    env.set("REY_RUNTIME_DIR", tc.runtime);
+    env.set("CAPY_HOME", ctx.capyHome);
+}
+
+func setInvocationEnv(tc: Toolchain): void {
+    var ctx = emptyContext();
+    ctx.capyHome = util.envOr("CAPY_HOME", util.join(util.envOr("HOME", ""), ".capy"));
+    setEnvFor(tc, ctx);
+}
+
+pub func build(tc: Toolchain, entryFile: string, outputPath: string): ExecResult {
+    setInvocationEnv(tc);
+    var args: Vec<string> = Vec.new();
+    args.push("build");
+    args.push(util.absolute(entryFile, process.cwd()));
+    args.push("-o");
+    args.push(util.absolute(outputPath, process.cwd()));
+    args.push("--runtime-dir");
+    args.push(util.absolute(tc.runtime, process.cwd()));
+    return util.runArgs(tc.rey, args);
+}
+
+pub func check(tc: Toolchain, entryFile: string): ExecResult {
+    setInvocationEnv(tc);
+    var args: Vec<string> = Vec.new();
+    args.push("check");
+    args.push(util.absolute(entryFile, process.cwd()));
+    return util.runArgs(tc.rey, args);
+}
+
+pub func runScript(tc: Toolchain, entryFile: string, programArgs: Vec<string>): ExecResult {
+    setInvocationEnv(tc);
+    var args: Vec<string> = Vec.new();
+    args.push("run");
+    args.push(util.absolute(entryFile, process.cwd()));
+    args.push("--");
+    for arg in programArgs {
+        args.push(arg);
+    }
+    return util.runArgs(tc.rey, args);
+}

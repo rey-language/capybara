@@ -1,0 +1,110 @@
+import std::cli;
+import std::process;
+import capy::commands::self_update;
+import capy::manifest;
+import capy::output;
+import capy::project;
+import capy::types::{Context};
+import capy::util;
+import capy::version;
+
+func report(label: string, ok: bool, detail: string): void {
+    if ok {
+        output.plain("[ok] " + label + ": " + detail);
+    } else {
+        output.plain("[missing] " + label + ": " + detail);
+    }
+}
+
+func reportCommand(name: string): void {
+    var found = process.which(name);
+    if found.len() > 0 {
+        report(name, true, found);
+    } else {
+        report(name, false, "not found on PATH");
+    }
+}
+
+func checkCommands(): void {
+    reportCommand("clang");
+    reportCommand("git");
+    reportCommand("curl");
+    reportCommand("tar");
+    var shasum = process.which("shasum");
+    if shasum.len() > 0 {
+        report("shasum or sha256sum", true, shasum);
+        return;
+    }
+    var sha256sum = process.which("sha256sum");
+    if sha256sum.len() > 0 {
+        report("shasum or sha256sum", true, sha256sum);
+    } else {
+        report("shasum or sha256sum", false, "neither found on PATH");
+    }
+}
+
+func checkProject(cwd: string): void {
+    var root = project.findRoot(cwd);
+    if root == "" {
+        output.plain("Project: no capy.toml found");
+        return;
+    }
+    output.plain("Project root: " + root);
+    var m = manifest.loadAt(root);
+    if m.found {
+        output.plain("Manifest: " + m.path + " (" + m.name + ")");
+    } else {
+        output.plain("Manifest: unavailable (" + m.error + ")");
+    }
+}
+
+func checkExecutable(ctx: Context): void {
+    var found = process.which("capy");
+    if found.len() == 0 {
+        report("which capy", false, "not found on PATH");
+        return;
+    }
+    var capyPath = util.absolute(found, ctx.cwd);
+    var binDir = util.trimSlash(util.absolute(util.join(ctx.capyHome, "bin"), ctx.cwd));
+    var currentPath = util.absolute(ctx.exePath, ctx.cwd);
+    var allowed = util.startsWith(capyPath, binDir + "/") || capyPath == currentPath;
+    report("which capy", allowed, capyPath);
+}
+
+pub func execute(ctx: Context, args: Vec<string>): int {
+    var parsed = cli.parseArgs(args);
+    output.plain("capy version: " + version.capyVersion());
+    checkProject(ctx.cwd);
+
+    var toolchainOk = ctx.tcFound && util.isDir(ctx.tcRoot) && util.isFile(ctx.tcRey);
+    report("Toolchain root", toolchainOk, ctx.tcRoot);
+    var reyOk = toolchainOk && ctx.tcVersion == version.reyVersion();
+    var reyDetail = ctx.tcVersion;
+    if ctx.tcVersion != version.reyVersion() {
+        reyDetail = reyDetail + " (expected " + version.reyVersion() + ")";
+    }
+    report("Rey version", reyOk, reyDetail);
+
+    var stdOk = util.isDir(ctx.tcStd);
+    report("Standard library", stdOk, ctx.tcStd);
+    var runtimeLib = util.join(ctx.tcRuntime, "librey_rt.a");
+    var runtimeOk = util.isFile(runtimeLib);
+    report("Runtime library", runtimeOk, runtimeLib);
+
+    var writable = util.runShell("test -w " + util.shellQuote(ctx.capyHome));
+    report("~/.capy writable", writable.code == 0, ctx.capyHome);
+    var stdLink = util.join(util.join(ctx.home, ".reyc"), "std");
+    var stdLinkOk = util.isDir(stdLink) && util.isDir(util.join(stdLink, "src"));
+    report("~/.reyc/std", stdLinkOk, stdLink);
+    checkExecutable(ctx);
+    checkCommands();
+
+    if cli.hasFlag(parsed, "online") {
+        output.info("Checking latest capy version online");
+        self_update.check(ctx);
+    }
+    if !toolchainOk || !reyOk || !stdOk || !runtimeOk {
+        return 1;
+    }
+    return 0;
+}

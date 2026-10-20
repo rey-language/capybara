@@ -1,0 +1,52 @@
+// Environment helpers for the native Rey compiler.
+//
+// The native compiler does not lower getEnv()/nativeEnvAll() in codegen, so
+// reads go through printenv. Mutations cannot affect the parent process from a
+// shell; Capybara passes environment values explicitly to child processes.
+
+func shellQuote(s: string): string {
+    var out = "'";
+    var i = 0;
+    loop {
+        if i >= s.len() { break; }
+        if s[i] == '\'' {
+            out = out + "'\\''";
+        } else {
+            out = out + s[i].toString();
+        }
+        i = i + 1;
+    }
+    return out + "'";
+}
+
+pub func get(key: string): string {
+    var result = exec("printenv " + shellQuote(key));
+    if result.isOk() {
+        return result.unwrap().trim();
+    }
+    return "";
+}
+
+pub func getOr(key: string, defaultVal: string): string {
+    var value = get(key);
+    if value.len() == 0 {
+        return defaultVal;
+    }
+    return value;
+}
+
+pub func has(key: string): bool {
+    return get(key).len() > 0;
+}
+
+pub func set(key: string, value: string): void {
+    // no-op: environment changes do not cross the shell boundary
+}
+
+pub func remove(key: string): void {
+    // no-op
+}
+
+pub func all(): HashMap<string, string> {
+    return HashMap.new();
+}

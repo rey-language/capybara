@@ -1,0 +1,90 @@
+import std::fs;
+import capy::types::{Context};
+import capy::util;
+
+func createLink(target: string, link: string): bool {
+    var args: Vec<string> = Vec.new();
+    args.push("-s");
+    args.push(target);
+    args.push(link);
+    var result = util.runArgs("ln", args);
+    return result.code == 0;
+}
+
+func copyMissingEntries(source: string, destination: string): void {
+    var entries = util.list(source);
+    for name in entries {
+        var from = util.join(source, name);
+        var to = util.join(destination, name);
+        if !util.exists(to) {
+            util.copyDir(from, to);
+        }
+    }
+}
+
+func backupPath(oldHome: string): string {
+    var stamp = util.nowSeconds();
+    var backup = oldHome + ".bak." + stamp.toString();
+    var suffix = 0;
+    loop {
+        if !util.exists(backup) {
+            break;
+        }
+        suffix = suffix + 1;
+        backup = oldHome + ".bak." + (stamp + suffix).toString();
+    }
+    return backup;
+}
+
+pub func migrateReyHome(ctx: Context): void {
+    var capyHome = ctx.capyHome;
+    var oldHome = util.join(ctx.home, ".rey");
+    var marker = util.join(capyHome, ".rey-migrated");
+    if !util.exists(oldHome) || util.exists(marker) {
+        return;
+    }
+    util.mkdirAll(util.dirname(capyHome));
+    if !util.exists(capyHome) {
+        fs.move(oldHome, capyHome);
+    } else {
+        copyMissingEntries(oldHome, capyHome);
+        fs.move(oldHome, backupPath(oldHome));
+    }
+    if !util.exists(oldHome) {
+        createLink(capyHome, oldHome);
+    }
+    util.write(marker, "migrated\n");
+}
+
+pub func ensureHome(ctx: Context): void {
+    migrateReyHome(ctx);
+    util.mkdirAll(ctx.capyHome);
+    util.mkdirAll(util.join(ctx.capyHome, "bin"));
+    util.mkdirAll(util.join(ctx.capyHome, "cache"));
+    util.mkdirAll(util.join(ctx.capyHome, "store"));
+    util.mkdirAll(util.join(ctx.capyHome, "toolchains"));
+    util.mkdirAll(util.join(ctx.capyHome, "registry"));
+}
+
+pub func ensureStdLink(ctx: Context): void {
+    var reyHome = util.join(ctx.home, ".reyc");
+    util.mkdirAll(reyHome);
+    var link = util.join(reyHome, "std");
+    var target = util.join(ctx.tcRoot, "std");
+    if !util.exists(link) && ctx.tcFound && util.isDir(target) {
+        createLink(target, link);
+    }
+}
+
+pub func ensureBinLinks(ctx: Context): void {
+    var binDir = util.join(ctx.capyHome, "bin");
+    util.mkdirAll(binDir);
+    var rey = util.join(binDir, "rey");
+    if !util.exists(rey) && ctx.tcFound && util.isFile(ctx.tcRey) {
+        createLink(ctx.tcRey, rey);
+    }
+    var reyc = util.join(binDir, "reyc");
+    if !util.exists(reyc) && util.exists(rey) {
+        createLink(rey, reyc);
+    }
+}

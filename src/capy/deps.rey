@@ -1,0 +1,203 @@
+import capy::types::{Context, Manifest};
+import capy::util;
+import capy::output;
+import capy::manifest;
+import capy::project;
+import capy::version;
+
+pub func registryDir(ctx: Context): string {
+    return util.join(util.join(ctx.capyHome, "registry"), "packages");
+}
+
+pub func ensureRegistry(ctx: Context, refresh: bool, offline: bool): bool {
+    var path = registryDir(ctx);
+    if !util.exists(path) {
+        if offline {
+            output.error("package registry is not cached; network access is disabled");
+            return false;
+        }
+        util.mkdirAll(util.dirname(path));
+        var args: Vec<string> = Vec.new();
+        args.push("clone");
+        args.push("--depth");
+        args.push("1");
+        args.push(version.registryUrl());
+        args.push(path);
+        var cloned = util.runArgs("git", args);
+        if cloned.code != 0 {
+            output.error("could not clone package registry: " + cloned.stderr.trim());
+            return false;
+        }
+        return true;
+    }
+    if refresh && !offline {
+        var pullArgs: Vec<string> = Vec.new();
+        pullArgs.push("-C");
+        pullArgs.push(path);
+        pullArgs.push("pull");
+        pullArgs.push("--ff-only");
+        var pulled = util.runArgs("git", pullArgs);
+        if pulled.code != 0 {
+            output.error("could not refresh package registry: " + pulled.stderr.trim());
+            return false;
+        }
+    }
+    return true;
+}
+
+pub func registryCommit(path: string): string {
+    var args: Vec<string> = Vec.new();
+    args.push("-C");
+    args.push(path);
+    args.push("rev-parse");
+    args.push("HEAD");
+    var result = util.runArgs("git", args);
+    if result.code != 0 {
+        return "";
+    }
+    return result.stdout.trim();
+}
+
+pub func packageDir(registryPath: string, name: string): string {
+    return util.join(util.join(registryPath, "packages"), name);
+}
+
+pub func packageExists(registryPath: string, name: string): bool {
+    var path = packageDir(registryPath, name);
+    return util.isFile(util.join(path, "capy.toml")) &&
+        util.isDir(util.join(path, "src"));
+}
+
+pub func packageVersion(registryPath: string, name: string): string {
+    if !packageExists(registryPath, name) {
+        return "";
+    }
+    var packageManifest = manifest.loadAt(packageDir(registryPath, name));
+    if !packageManifest.found {
+        return "";
+    }
+    return packageManifest.version;
+}
+
+func versionMatches(spec: string, resolved: string): bool {
+    return spec == "" || spec == "*" || spec == resolved;
+}
+
+pub func copyContents(src: string, dst: string): void {
+    util.copyDir(src, dst);
+}
+
+pub func vendorPackage(registryPath: string, root: string, name: string): bool {
+    var source = packageDir(registryPath, name);
+    if !packageExists(registryPath, name) {
+        output.error("package is missing from the registry: " + name);
+        return false;
+    }
+    var dest = util.join(project.vendorDir(root), name);
+    util.removeAll(dest);
+    util.mkdirAll(dest);
+    copyContents(util.join(source, "src"), dest);
+    util.copy(util.join(source, "capy.toml"), util.join(dest, "capy.toml"));
+    return true;
+}
+
+func installOne(
+    m: Manifest,
+    registryPath: string,
+    registryHead: string,
+    name: string,
+    spec: string,
+    locked: bool,
+    force: bool,
+    lockEntries: HashMap<string, string>,
+    versions: HashMap<string, string>,
+    commits: HashMap<string, string>
+): bool {
+    var resolved = packageVersion(registryPath, name);
+    if resolved == "" {
+        output.error("package not found in registry: " + name);
+        return false;
+    }
+    var commit = registryHead;
+    if locked {
+        var lockVersionKey = name + ".version";
+        var lockCommitKey = name + ".commit";
+        var lockSourceKey = name + ".source";
+        if !lockEntries.has(lockVersionKey) || !lockEntries.has(lockCommitKey) ||
+            !lockEntries.has(lockSourceKey) {
+            output.error("capy.lock is missing an entry for " + name);
+            return false;
+        }
+        var lockedVersion = lockEntries.get(lockVersionKey);
+        commit = lockEntries.get(lockCommitKey);
+        if !versionMatches(spec, lockedVersion) || resolved != lockedVersion {
+            output.error("locked version does not match dependency " + name + " = " + spec);
+            return false;
+        }
+        if commit != registryHead || lockEntries.get(lockSourceKey) != version.registryRepo() {
+            output.error("locked registry revision is not available for " + name);
+            return false;
+        }
+    } else if !versionMatches(spec, resolved) {
+        output.error("version mismatch for " + name + ": wanted " + spec + ", found " + resolved);
+        return false;
+    }
+    versions.set(name, resolved);
+    commits.set(name, commit);
+    var vendorPath = util.join(project.vendorDir(m.root), name);
+    if util.isDir(vendorPath) && !force {
+        output.info("Using cached package " + name + " " + resolved);
+    } else {
+        if !vendorPackage(registryPath, m.root, name) {
+            return false;
+        }
+        output.success("Installed " + name + " " + resolved);
+    }
+    output.plain("import vendor::" + name + ";");
+    return true;
+}
+
+pub func installAll(ctx: Context, m: Manifest, locked: bool, force: bool, offline: bool): bool {
+    if !m.found {
+        output.error("no capy.toml found");
+        return false;
+    }
+    if locked && !util.isFile(util.join(m.root, "capy.lock")) {
+        output.error("--locked requires capy.lock");
+        return false;
+    }
+    var versions: HashMap<string, string> = HashMap.new();
+    var commits: HashMap<string, string> = HashMap.new();
+    var lockEntries: HashMap<string, string> = manifest.lockLoad(m.root);
+    var names: Vec<string> = m.dependencies.keys();
+    if names.len() == 0 {
+        if !locked {
+            manifest.lockWrite(m.root, m, versions, commits);
+        }
+        output.info("No dependencies to install");
+        return true;
+    }
+    if !ensureRegistry(ctx, !locked, offline || locked) {
+        return false;
+    }
+    var path = registryDir(ctx);
+    var commit = registryCommit(path);
+    if commit == "" {
+        output.error("could not read package registry revision");
+        return false;
+    }
+    var i = 0;
+    loop {
+        if i >= names.len() { break; }
+        var name = names[i];
+        var spec = m.dependencies.get(name);
+        if !installOne(m, path, commit, name, spec, locked, force, lockEntries, versions, commits) {
+            return false;
+        }
+        i = i + 1;
+    }
+    if !locked {
+        manifest.lockWrite(m.root, m, versions, commits);
+    }
+    return true;
+}

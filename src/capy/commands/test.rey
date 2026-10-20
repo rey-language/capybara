@@ -1,0 +1,156 @@
+import std::cli;
+import capy::types::{Context, ExecResult, Toolchain};
+import capy::output;
+import capy::project;
+import capy::toolchain;
+import capy::util;
+
+func relativePath(root: string, path: string): string {
+    var normalizedRoot = util.trimSlash(util.replaceText(root, "\\", "/"));
+    var normalizedPath = util.replaceText(path, "\\", "/");
+    var prefix = normalizedRoot + "/";
+    if normalizedPath.startsWith(prefix) {
+        return normalizedPath.slice(prefix.len(), normalizedPath.len());
+    }
+    return normalizedPath;
+}
+
+func isSkippedPath(path: string): bool {
+    var padded = "/" + path + "/";
+    return util.contains(padded, "/vendor/") ||
+        util.contains(padded, "/build/") ||
+        util.contains(padded, "/.capy/") ||
+        util.contains(padded, "/node_modules/");
+}
+
+func sortPaths(paths: Vec<string>): Vec<string> {
+    var i = 1;
+    loop {
+        if i >= paths.len() {
+            break;
+        }
+        var current = paths[i];
+        var j = i - 1;
+        loop {
+            if j < 0 || paths[j] <= current {
+                break;
+            }
+            paths.set(j + 1, paths[j]);
+            j = j - 1;
+        }
+        paths.set(j + 1, current);
+        i = i + 1;
+    }
+    return paths;
+}
+
+func discoverTests(root: string, filter: string): Vec<string> {
+    var tests: Vec<string> = Vec.new();
+    var dirs = project.testsDirs(root);
+    for dir in dirs {
+        var absoluteDir = util.absolute(dir, root);
+        var paths = util.listRecursive(absoluteDir);
+        for path in paths {
+            var normalized = util.replaceText(path, "\\", "/");
+            if normalized.endsWith("_test.rey") {
+                var relative = relativePath(root, normalized);
+                if !isSkippedPath(relative) &&
+                    (filter == "" || util.contains(relative, filter)) {
+                    tests.push(relative);
+                }
+            }
+        }
+    }
+    return sortPaths(tests);
+}
+
+func printCapturedStdout(stdout: string): void {
+    if stdout != "" {
+        print(stdout);
+        if !stdout.endsWith("\n") {
+            println("");
+        }
+    }
+}
+
+func outputName(relative: string): string {
+    var name = util.replaceText(util.replaceText(relative, "/", "_"), "\\", "_");
+    if name.endsWith(".rey") {
+        name = name.slice(0, name.len() - 4);
+    }
+    return name;
+}
+
+pub func execute(ctx: Context, args: Vec<string>): int {
+    var parsed = cli.parseArgs(args);
+    var filter = cli.getOption(parsed, "filter", "");
+    var listOnly = cli.hasFlag(parsed, "list");
+
+    var root = project.findRoot(ctx.cwd);
+    if root == "" {
+        output.error("not inside a Capybara project");
+        return 1;
+    }
+    root = util.absolute(root, ctx.cwd);
+
+    var tc: Toolchain = toolchain.resolve(ctx);
+    if !toolchain.require(tc) {
+        return 1;
+    }
+
+    var tests = discoverTests(root, filter);
+    if tests.len() == 0 {
+        output.plain("no tests found");
+        return 0;
+    }
+    if listOnly {
+        for testPath in tests {
+            output.plain(testPath);
+        }
+        output.plain(tests.len().toString() + " test files");
+        return 0;
+    }
+
+    var testsBuildDir = util.join(project.buildDir(root), "tests");
+    util.mkdirAll(testsBuildDir);
+    var passed = 0;
+    var failed = 0;
+    for testPath in tests {
+        var entry = util.absolute(util.join(root, testPath), root);
+        var binary = util.absolute(
+            project.buildPath(root, "tests/" + outputName(testPath)),
+            root
+        );
+        var buildResult = toolchain.build(tc, entry, binary);
+        if buildResult.code != 0 {
+            output.plain("FAIL " + testPath);
+            if buildResult.stderr != "" {
+                eprint(buildResult.stderr);
+            }
+            failed = failed + 1;
+        } else {
+            var noArgs: Vec<string> = Vec.new();
+            var runResult = util.runArgs(binary, noArgs);
+            printCapturedStdout(runResult.stdout);
+            if runResult.code == 0 {
+                if runResult.stderr != "" {
+                    eprint(runResult.stderr);
+                }
+                output.plain("ok " + testPath);
+                passed = passed + 1;
+            } else {
+                output.plain("FAIL " + testPath);
+                if runResult.stderr != "" {
+                    eprint(runResult.stderr);
+                }
+                failed = failed + 1;
+            }
+        }
+    }
+
+    output.plain(passed.toString() + " passed, " + failed.toString() + " failed");
+    if failed > 0 {
+        return 1;
+    }
+    return 0;
+}

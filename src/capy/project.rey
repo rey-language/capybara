@@ -1,0 +1,63 @@
+import std::process;
+import capy::types::{Manifest};
+import capy::util;
+
+pub func findRoot(start: string): string {
+    var current = util.absolute(start, process.cwd());
+    if util.isFile(current) {
+        current = util.dirname(current);
+    }
+    loop {
+        if util.isFile(util.join(current, "capy.toml")) {
+            return current;
+        }
+        var parent = util.dirname(current);
+        if parent == current || parent == "" {
+            break;
+        }
+        current = parent;
+    }
+    return "";
+}
+
+pub func entryPath(m: Manifest): string {
+    var entry = m.entry;
+    if entry == "" {
+        entry = "src/main.rey";
+    }
+    var root = m.root;
+    if root == "" {
+        root = process.cwd();
+    }
+    var absoluteRoot = util.absolute(root, process.cwd());
+    return util.absolute(entry, absoluteRoot);
+}
+
+pub func buildDir(root: string): string {
+    return util.join(root, "build");
+}
+
+pub func buildPath(root: string, name: string): string {
+    return util.join(buildDir(root), name);
+}
+
+pub func vendorDir(root: string): string {
+    return util.join(root, "vendor");
+}
+
+pub func testsDirs(root: string): Vec<string> {
+    var result: Vec<string> = Vec.new();
+    var source = util.join(root, "src");
+    var tests = util.join(root, "tests");
+    if util.isDir(source) {
+        result.push(source);
+    }
+    if util.isDir(tests) {
+        result.push(tests);
+    }
+    return result;
+}
+
+pub func projectName(root: string): string {
+    return util.basename(root);
+}

@@ -1,0 +1,62 @@
+import capy::types::{Context};
+import capy::util;
+import capy::output;
+import capy::manifest;
+import capy::project;
+import capy::deps;
+import capy::commands::self_update;
+
+func hasFlag(args: Vec<string>, name: string): bool {
+    var wanted = "--" + name;
+    for arg in args {
+        if arg == wanted { return true; }
+    }
+    return false;
+}
+
+func positionals(args: Vec<string>): Vec<string> {
+    var result: Vec<string> = Vec.new();
+    var afterSeparator = false;
+    for arg in args {
+        if !afterSeparator && arg == "--" {
+            afterSeparator = true;
+        } else if afterSeparator || !util.startsWith(arg, "-") {
+            result.push(arg);
+        }
+    }
+    return result;
+}
+
+pub func execute(ctx: Context, args: Vec<string>): int {
+    var packages = positionals(args);
+    var selfRequested = hasFlag(args, "self");
+    var checkOnly = hasFlag(args, "check");
+    if packages.len() > 0 {
+        if selfRequested || checkOnly {
+            output.warn("package arguments are ignored in self-update/check mode");
+        } else {
+            output.warn("package arguments are ignored; all dependencies will be updated");
+        }
+    }
+    if selfRequested {
+        return self_update.perform(ctx);
+    }
+    if checkOnly {
+        return self_update.check(ctx);
+    }
+    var root = project.findRoot(ctx.cwd);
+    if root == "" {
+        output.error("no capy.toml found; run capy init first");
+        return 1;
+    }
+    var m = manifest.loadAt(root);
+    if !m.found {
+        output.error(m.error);
+        return 1;
+    }
+    var offline = hasFlag(args, "offline");
+    if deps.installAll(ctx, m, false, true, offline) {
+        return 0;
+    }
+    return 1;
+}

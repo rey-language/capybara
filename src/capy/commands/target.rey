@@ -1,0 +1,90 @@
+import capy::types::{Context, Manifest, Toolchain, emptyManifest};
+import capy::util;
+import capy::manifest;
+import capy::project;
+
+pub struct Target {
+    pub ok: bool,
+    pub root: string,
+    pub entry: string,
+    pub name: string,
+    pub manifest: Manifest,
+    pub error: string,
+}
+
+pub func emptyTarget(): Target {
+    return Target {
+        ok: false,
+        root: "",
+        entry: "",
+        name: "",
+        manifest: emptyManifest(),
+        error: "",
+    };
+}
+
+pub func resolve(ctx: Context, fileArg: string): Target {
+    if fileArg != "" {
+        if util.extname(fileArg) != ".rey" {
+            var invalid = emptyTarget();
+            invalid.error = "target file must end in .rey";
+            return invalid;
+        }
+        var entry = util.absolute(fileArg, ctx.cwd);
+        if !util.isFile(entry) {
+            var missing = emptyTarget();
+            missing.error = "target file does not exist: " + entry;
+            return missing;
+        }
+        var root = project.findRoot(util.dirname(entry));
+        var name = util.basename(entry);
+        name = name.slice(0, name.len() - 4);
+        return Target {
+            ok: true,
+            root: root,
+            entry: entry,
+            name: name,
+            manifest: emptyManifest(),
+            error: "",
+        };
+    }
+
+    var root = project.findRoot(ctx.cwd);
+    if root == "" {
+        var outside = emptyTarget();
+        outside.error = "not inside a capy project (capy.toml not found)";
+        return outside;
+    }
+    var m = manifest.loadAt(root);
+    if !m.found {
+        var loadError = emptyTarget();
+        loadError.error = m.error;
+        return loadError;
+    }
+    var entry = util.absolute(project.entryPath(m), root);
+    if !util.isFile(entry) {
+        var missingEntry = emptyTarget();
+        missingEntry.error = "project entry does not exist: " + entry;
+        return missingEntry;
+    }
+    return Target {
+        ok: true,
+        root: root,
+        entry: entry,
+        name: m.name,
+        manifest: m,
+        error: "",
+    };
+}
+
+pub func ctxToolchain(ctx: Context): Toolchain {
+    return Toolchain {
+        found: ctx.tcFound,
+        root: ctx.tcRoot,
+        rey: ctx.tcRey,
+        runtime: ctx.tcRuntime,
+        std: ctx.tcStd,
+        version: ctx.tcVersion,
+        error: ctx.tcError,
+    };
+}

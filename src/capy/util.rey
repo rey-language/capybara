@@ -1,0 +1,272 @@
+import std::env;
+import std::fs;
+import std::process;
+import capy::types::{ExecResult};
+
+pub func shellQuote(s: string): string {
+    var result = "'";
+    var i = 0;
+    loop {
+        if i >= s.len() {
+            break;
+        }
+        if s[i] == '\'' {
+            result = result + "'\\''";
+        } else {
+            result = result + s[i].toString();
+        }
+        i = i + 1;
+    }
+    return result + "'";
+}
+
+pub func join(a: string, b: string): string {
+    return fs.join(a, b);
+}
+
+pub func exists(path: string): bool {
+    return fs.exists(path);
+}
+
+pub func isDir(path: string): bool {
+    return fs.isDir(path);
+}
+
+pub func isFile(path: string): bool {
+    return fs.isFile(path);
+}
+
+pub func mkdirAll(path: string): void {
+    fs.mkdirAll(path);
+}
+
+pub func removeAll(path: string): void {
+    if fs.isDir(path) {
+        fs.removeDirAll(path);
+    } else if fs.exists(path) {
+        fs.remove(path);
+    }
+}
+
+pub func read(path: string): string {
+    return fs.read(path);
+}
+
+pub func write(path: string, content: string): void {
+    fs.write(path, content);
+}
+
+pub func copy(src: string, dst: string): void {
+    fs.copy(src, dst);
+}
+
+func copyDirContents(src: string, dst: string): void {
+    if fs.isDir(src) {
+        fs.mkdirAll(dst);
+        var entries = fs.listPaths(src);
+        for entry in entries {
+            var target = fs.join(dst, fs.basename(entry));
+            if fs.isDir(entry) {
+                copyDirContents(entry, target);
+            } else if fs.isFile(entry) {
+                fs.copy(entry, target);
+            }
+        }
+        return;
+    }
+    if fs.isFile(src) {
+        fs.copy(src, dst);
+    }
+}
+
+pub func copyDir(src: string, dst: string): void {
+    copyDirContents(src, dst);
+}
+
+pub func list(path: string): Vec<string> {
+    return fs.list(path);
+}
+
+func collectRecursive(path: string, depth: int, result: Vec<string>): void {
+    if depth > 40 {
+        return;
+    }
+    if fs.isFile(path) {
+        result.push(path);
+        return;
+    }
+    if !fs.isDir(path) {
+        return;
+    }
+    var entries = fs.listPaths(path);
+    for entry in entries {
+        if fs.isDir(entry) {
+            collectRecursive(entry, depth + 1, result);
+        } else if fs.isFile(entry) {
+            result.push(entry);
+        }
+    }
+}
+
+pub func listRecursive(path: string): Vec<string> {
+    var result: Vec<string> = Vec.new();
+    collectRecursive(path, 0, result);
+    return result;
+}
+
+pub func basename(path: string): string {
+    return fs.basename(path);
+}
+
+pub func dirname(path: string): string {
+    return fs.dirname(path);
+}
+
+pub func extname(path: string): string {
+    return fs.extname(path);
+}
+
+pub func isAbsolute(path: string): bool {
+    if path.len() == 0 {
+        return false;
+    }
+    if path[0] == '/' || path[0] == '\\' {
+        return true;
+    }
+    return path.len() >= 3 && path.slice(1, 2) == ":" &&
+        (path[2] == '/' || path[2] == '\\');
+}
+
+pub func absolute(path: string, base: string): string {
+    if isAbsolute(path) {
+        return fs.cleanPath(path);
+    }
+    return fs.cleanPath(fs.join(base, path));
+}
+
+pub func envOr(key: string, fallback: string): string {
+    return env.getOr(key, fallback);
+}
+
+pub func runShell(cmd: string): ExecResult {
+    var result = process.runDetailed(cmd);
+    return ExecResult {
+        code: result.code,
+        stdout: result.stdout,
+        stderr: result.stderr,
+    };
+}
+
+pub func runArgs(program: string, args: Vec<string>): ExecResult {
+    var command = shellQuote(program);
+    for arg in args {
+        command = command + " " + shellQuote(arg);
+    }
+    return runShell(command);
+}
+
+pub func runArgsIn(program: string, args: Vec<string>, cwd: string): ExecResult {
+    var command = "cd " + shellQuote(cwd) + " && ";
+    command = command + shellQuote(program);
+    for arg in args {
+        command = command + " " + shellQuote(arg);
+    }
+    return runShell(command);
+}
+
+pub func splitAtDoubleDash(args: Vec<string>): Vec<Vec<string>> {
+    var before: Vec<string> = Vec.new();
+    var after: Vec<string> = Vec.new();
+    var found = false;
+    for arg in args {
+        if !found && arg == "--" {
+            found = true;
+        } else if found {
+            after.push(arg);
+        } else {
+            before.push(arg);
+        }
+    }
+    var result: Vec<Vec<string>> = Vec.new();
+    result.push(before);
+    result.push(after);
+    return result;
+}
+
+pub func splitOnce(s: string, sep: string): Vec<string> {
+    var result: Vec<string> = Vec.new();
+    var at = s.indexOf(sep);
+    if at < 0 {
+        result.push(s);
+        result.push("");
+        return result;
+    }
+    result.push(s.slice(0, at));
+    result.push(s.slice(at + sep.len(), s.len()));
+    return result;
+}
+
+pub func contains(s: string, sub: string): bool {
+    return s.indexOf(sub) >= 0;
+}
+
+pub func startsWith(s: string, prefix: string): bool {
+    if prefix.len() > s.len() {
+        return false;
+    }
+    var i = 0;
+    loop {
+        if i >= prefix.len() {
+            break;
+        }
+        if s[i] != prefix[i] {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+pub func joinList(items: Vec<string>, sep: string): string {
+    var result = "";
+    var i = 0;
+    for item in items {
+        if i > 0 {
+            result = result + sep;
+        }
+        result = result + item;
+        i = i + 1;
+    }
+    return result;
+}
+
+pub func replaceText(s: string, from: string, to: string): string {
+    if from.len() == 0 {
+        return s;
+    }
+    var parts = s.split(from);
+    return parts.join(to);
+}
+
+pub func trimSlash(s: string): string {
+    var result = s;
+    loop {
+        if result.len() <= 1 || !result.endsWith("/") {
+            break;
+        }
+        result = result.slice(0, result.len() - 1);
+    }
+    return result;
+}
+
+pub func isEmptyDir(path: string): bool {
+    return fs.list(path).len() == 0;
+}
+
+pub func nowSeconds(): int {
+    var result = runShell("date +%s");
+    if result.code != 0 {
+        return 0;
+    }
+    return result.stdout.trim().toInt();
+}

@@ -1,0 +1,82 @@
+// Command-line argument parsing and help text helpers.
+//
+// This copy avoids importing std::string because the native compiler treats the
+// imported namespace name "string" as a collision with its string builtin.
+// parseArgs returns a typed struct rather than any so the native code generator
+// can resolve qualified calls to this module.
+
+pub struct ParsedArgs {
+    pub flags: HashMap<string, bool>,
+    pub options: HashMap<string, string>,
+    pub positionals: Vec<string>,
+}
+
+func normalizeName(name: string): string {
+    var start = 0;
+    loop {
+        if start >= name.len() || name[start] != '-' { break; }
+        start = start + 1;
+    }
+    return name.slice(start, name.len());
+}
+
+pub func parseArgs(args: Vec<string>): ParsedArgs {
+    var flags: HashMap<string, bool> = HashMap.new();
+    var options: HashMap<string, string> = HashMap.new();
+    var positionals: Vec<string> = Vec.new();
+    var positionalMode = false;
+    var i = 0;
+
+    loop {
+        if i >= args.len() { break; }
+        var arg = args[i];
+
+        if positionalMode {
+            positionals.push(arg);
+        } else if arg == "--" {
+            positionalMode = true;
+        } else if arg.len() > 2 && arg.startsWith("--") {
+            var body = arg.slice(2, arg.len());
+            var equalsAt = body.indexOf("=");
+            if equalsAt >= 0 {
+                var name = body.slice(0, equalsAt);
+                var value = body.slice(equalsAt + 1, body.len());
+                options.set(name, value);
+            } else if i + 1 < args.len() && !args[i + 1].startsWith("-") {
+                options.set(body, args[i + 1]);
+                i = i + 1;
+            } else {
+                flags.set(body, true);
+            }
+        } else if arg.len() > 1 && arg[0] == '-' {
+            var j = 1;
+            loop {
+                if j >= arg.len() { break; }
+                flags.set(arg[j].toString(), true);
+                j = j + 1;
+            }
+        } else {
+            positionals.push(arg);
+        }
+
+        i = i + 1;
+    }
+
+    return ParsedArgs { flags: flags, options: options, positionals: positionals };
+}
+
+pub func hasFlag(parsed: ParsedArgs, flagName: string): bool {
+    return parsed.flags.has(normalizeName(flagName));
+}
+
+pub func getOption(parsed: ParsedArgs, optName: string, defaultValue: string): string {
+    var name = normalizeName(optName);
+    if parsed.options.has(name) {
+        return parsed.options.get(name);
+    }
+    return defaultValue;
+}
+
+pub func getPositionals(parsed: ParsedArgs): Vec<string> {
+    return parsed.positionals;
+}
