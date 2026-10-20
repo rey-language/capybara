@@ -1,0 +1,22 @@
+install.sh
+  h_b8c068798e4e71 423-426
+packaging/README.md
+  h_b8c068798e4e71 14-18
+scripts/build.sh
+  h_b8c068798e4e71 8
+scripts/fetch-toolchain.sh
+  h_b8c068798e4e71 70-76
+scripts/package.sh
+  h_b8c068798e4e71 27-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b790a60e907777b08c148121478f2035fc1ece25",
+  "prompts": {},
+  "humans": {
+    "h_b8c068798e4e71": {
+      "author": "Misbah Khursheed <m.misbahkhursheed@gmail.com>"
+    }
+  }
+}
