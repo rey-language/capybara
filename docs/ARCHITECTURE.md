@@ -60,12 +60,20 @@ A valid toolchain has `bin/rey`, `bin/runtime/librey_rt.a`, and `std/src`.
 Before invoking the compiler, Capy sets `REY_HOME`, `REY_STD_PATH`,
 `REY_RUNTIME_DIR`, and `CAPY_HOME` from the resolved toolchain and context.
 
+The upstream Rey archive stores `librey_rt.a` as LLVM 21 bitcode. Capy's
+`scripts/build-runtime.sh` compiles the maintained C sources in
+`compat/runtime` into native, non-LTO objects and replaces that archive during
+toolchain fetch and before each Capy build. This lets Ubuntu 22.04's clang 14
+link the bundled runtime. The runtime source copy follows the Rey 0.3 ABI and
+must be reviewed when that ABI changes.
+
 All compiler entry and output paths are absolute. Rey derives a project root
-from `/src/` in an entry path, so relative paths can resolve imports against
-the wrong root. Build invokes `rey build <entry> -o <output> --runtime-dir
-<runtime>`; check invokes `rey check <entry>`; ad-hoc script execution invokes
-`rey run <entry> -- <args...>`. Project `run` builds to `build/<name>` and
-executes that binary.
+from the first `/src/` segment in an entry path. Avoid placing a checkout
+directly at `/src`: in that layout, root detection selects the leading segment
+and imports resolve incorrectly. Build invokes `rey build <entry> -o <output>
+--runtime-dir <runtime>`; check invokes `rey check <entry>`; ad-hoc script
+execution invokes `rey run <entry> -- <args...>`. Project `run` builds to
+`build/<name>` and executes that binary.
 
 ## Installed and mutable data
 

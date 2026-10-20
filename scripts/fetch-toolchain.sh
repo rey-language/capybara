@@ -53,14 +53,8 @@ fi
 EXTRACT_DIR="$TMP_DIR/extracted"
 mkdir -p "$EXTRACT_DIR" "$REPO_ROOT/vendor"
 tar -xzf "$ARCHIVE" -C "$EXTRACT_DIR"
-SOURCE_DIR=""
-for candidate in "$EXTRACT_DIR"/rey-v"$REY_VERSION"-"$REY_TARGET"; do
-    if [[ -d "$candidate" ]]; then
-        SOURCE_DIR="$candidate"
-        break
-    fi
-done
-[[ -n "$SOURCE_DIR" ]] || fail "Archive does not contain rey-v$REY_VERSION-$REY_TARGET"
+SOURCE_DIR="$EXTRACT_DIR/rey-v$REY_VERSION-$REY_TARGET"
+[[ -d "$SOURCE_DIR" ]] || fail "Archive does not contain rey-v$REY_VERSION-$REY_TARGET"
 [[ -f "$SOURCE_DIR/bin/rey" ]] || fail "Rey archive is missing bin/rey"
 [[ -f "$SOURCE_DIR/bin/runtime/librey_rt.a" ]] || fail "Rey archive is missing bin/runtime/librey_rt.a"
 [[ -d "$SOURCE_DIR/std/src" ]] || fail "Rey archive is missing std/src"
@@ -77,6 +71,9 @@ fi
 if [[ -d "$REPO_ROOT/compat/std" ]]; then
     rm -rf "$STAGE_DIR/std/src"
     cp -R "$REPO_ROOT/compat/std" "$STAGE_DIR/std/src"
+fi
+if [[ "${CAPY_NATIVE_RUNTIME:-1}" != "0" ]]; then
+    bash "$SCRIPT_DIR/build-runtime.sh" "$STAGE_DIR/bin/runtime"
 fi
 if [[ -e "$REPO_ROOT/vendor/toolchain" || -L "$REPO_ROOT/vendor/toolchain" ]]; then
     mv "$REPO_ROOT/vendor/toolchain" "$BACKUP_DIR"

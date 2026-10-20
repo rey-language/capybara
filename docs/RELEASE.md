@@ -8,7 +8,11 @@ published.
 
 The release process is organized around three stages:
 
-1. Fetch the pinned Rey `0.3.0` compiler, runtime, and standard library.
+1. Fetch the pinned Rey `0.3.0` compiler, runtime, and standard library. The
+   upstream runtime archive is LLVM 21 bitcode, so `scripts/build-runtime.sh`
+   rebuilds it from `compat/runtime` as native objects with the platform's
+   clang and archiver. This keeps Linux builds compatible with Ubuntu 22.04's
+   LLVM 14 toolchain.
 2. Build Capybara with that toolchain for a supported platform.
 3. Package `capy` and the matching toolchain into a target archive and
    publish the corresponding Homebrew or npm artifacts.
@@ -19,6 +23,9 @@ The scripts are `scripts/fetch-toolchain.sh`, `scripts/build.sh`, and
 renders the Homebrew formula. `install.sh` at the repository root is the
 canonical installer; it supports curl-pipe installation and installation from a
 local archive. `packaging/install.sh` is a compatibility wrapper around it.
+The runtime sources in `compat/runtime` track the Rey 0.3 runtime ABI; update
+them when that ABI changes. Set `CAPY_NATIVE_RUNTIME=0` only to keep the runtime
+archive from the downloaded toolchain unchanged.
 
 ## Archive layout and targets
 

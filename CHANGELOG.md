@@ -9,6 +9,8 @@ First beta of Capybara, the `capy` CLI for the Rey programming language.
 - `capy init`, `run`, `build`, `check`, `test`, `clean`, `doctor`, `install`,
   `update`, `help`, and `version`.
 - Bundled Rey 0.3.0 compiler, runtime, and compatibility standard library.
+- Rebuild the bundled runtime from maintained C sources as native objects so
+  Linux builds do not depend on LLVM bitcode compatibility.
 - Vendored dependencies from the Rey package registry, with `capy.lock`,
   `--locked`, `--force`, `--offline`, and `capy update`.
 - `~/.rey` to `~/.capy` migration, `~/.reyc/std` setup, and `rey`/`reyc` links.
