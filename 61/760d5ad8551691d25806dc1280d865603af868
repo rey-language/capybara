@@ -1,0 +1,99 @@
+packaging/npm/platforms/darwin-x64/package.json
+  s_11dba060505a09::t_278ca2990c9911 3
+.github/workflows/release.yml
+  s_a10837b23dbc24::t_d74ef6e509b5fd 76-85
+  s_11dba060505a09::t_278ca2990c9911 123-124,133,140-142
+  s_a10837b23dbc24::t_8238d259f7a056 13,18-28,43,129,161
+packaging/README.md
+  s_a10837b23dbc24::t_d9bf0b989bfa35 54-55
+  s_11dba060505a09::t_278ca2990c9911 39-40
+  s_a10837b23dbc24::t_8238d259f7a056 20
+docs/RELEASE.md
+  s_a10837b23dbc24::t_8238d259f7a056 33-43
+  s_3868795c391050::t_c90b4342ccb91c 3-8
+  s_11dba060505a09::t_278ca2990c9911 14,110-111,113,115,117
+  s_a10837b23dbc24::t_f301bd1a4540bc 44
+capy.toml
+  s_11dba060505a09::t_278ca2990c9911 3
+scripts/package.sh
+  s_11dba060505a09::t_278ca2990c9911 6
+  s_a10837b23dbc24::t_8238d259f7a056 40-54
+src/capy/toolchain.rey
+  s_3868795c391050::t_8740f01d0280b5 43-45,49-50
+  s_a10837b23dbc24::t_2be0d646715b15 13
+  s_a10837b23dbc24::t_591e7ae1130891 51-52
+scripts/release-manifest.sh
+  s_11dba060505a09::t_278ca2990c9911 6
+docs/ARCHITECTURE.md
+  s_11dba060505a09::t_278ca2990c9911 55,130
+install.sh
+  s_a10837b23dbc24::t_d74ef6e509b5fd 372-376,378
+src/capy/commands/doctor.rey
+  s_3868795c391050::t_189841b0bd7450 10,82-88
+packaging/npm/platforms/darwin-arm64/package.json
+  s_11dba060505a09::t_278ca2990c9911 3
+packaging/npm/platforms/linux-arm64/package.json
+  s_11dba060505a09::t_278ca2990c9911 3
+docs/CONTRACT.md
+  s_11dba060505a09::t_278ca2990c9911 88,138-139,486-487,620
+packaging/npm/platforms/linux-x64/package.json
+  s_11dba060505a09::t_278ca2990c9911 3
+.github/workflows/ci.yml
+  s_11dba060505a09::t_278ca2990c9911 30,52
+scripts/build.sh
+  s_a10837b23dbc24::t_8238d259f7a056 12-18
+compat/std/fs/main.rey
+  s_11dba060505a09::t_278ca2990c9911 3
+packaging/brew/capy.rb
+  s_11dba060505a09::t_278ca2990c9911 5,16,20,27,31
+  s_a10837b23dbc24::t_8238d259f7a056 13
+scripts/fetch-toolchain.sh
+  s_11dba060505a09::t_278ca2990c9911 11
+  s_a10837b23dbc24::t_8238d259f7a056 71-72
+src/capy/version.rey
+  s_11dba060505a09::t_278ca2990c9911 4,8
+scripts/render-brew.sh
+  s_11dba060505a09::t_278ca2990c9911 6,19
+README.md
+  s_11dba060505a09::t_278ca2990c9911 4,16,26,117,121
+docs/REY-PRIMER.md
+  s_11dba060505a09::t_278ca2990c9911 4
+scripts/package-npm.sh
+  s_11dba060505a09::t_278ca2990c9911 6
+packaging/npm/cli/package.json
+  s_11dba060505a09::t_278ca2990c9911 3,17-20
+CHANGELOG.md
+  s_11dba060505a09::t_278ca2990c9911 3-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "61760d5ad8551691d25806dc1280d865603af868",
+  "prompts": {},
+  "sessions": {
+    "s_11dba060505a09": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15a4f-c5bf-7cc1-ad18-bd4a12d13db4",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Misbah Khursheed <m.misbahkhursheed@gmail.com>"
+    },
+    "s_3868795c391050": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15928-4757-7001-9551-d48d98915811",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Misbah Khursheed <m.misbahkhursheed@gmail.com>"
+    },
+    "s_a10837b23dbc24": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15a62-f8ec-7d12-9a09-19010e28d1a2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Misbah Khursheed <m.misbahkhursheed@gmail.com>"
+    }
+  }
+}
